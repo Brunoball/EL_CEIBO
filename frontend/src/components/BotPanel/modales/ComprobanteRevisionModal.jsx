@@ -95,7 +95,7 @@ const ComprobanteRevisionModal = ({
               ) : null}
 
               <div className="bp-comp-summary">
-              <div><span>Venta</span><b>{safeText(detalle.campania_nombre, "Venta escolar")}</b></div>
+              <div><span>Venta</span><b>{safeText(detalle.campania_nombre, "Venta del club")}</b></div>
               <div><span>Producto</span><b>{safeText(detalle.producto_nombre, "Producto")}</b></div>
               <div><span>Persona</span><b>{safeText(detalle.nombre_apellido)}</b></div>
               <div><span>DNI</span><b>{safeText(detalle.dni)}</b></div>

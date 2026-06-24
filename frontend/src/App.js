@@ -42,8 +42,7 @@ import Familias from "./components/Alumnos/Familias";
 import Ventas from "./components/Ventas/Ventas";
 
 const PANEL_API =
-  process.env.REACT_APP_BOT_PANEL_URL ||
-  "https://cooperadora.ipet50.edu.ar/api/bot_wp/funciones/Panel/endpoints";
+  "https://elceibo.3devsnet.com/api/bot_wp/funciones/Panel/endpoints";
 
 const toNum = (v) => {
   const n = Number(v);

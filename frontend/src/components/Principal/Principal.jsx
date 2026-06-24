@@ -28,8 +28,7 @@ import "./principal.css";
 import "../Global/roots.css";
 
 const PANEL_API =
-  process.env.REACT_APP_BOT_PANEL_URL ||
-  "https://cooperadora.ipet50.edu.ar/api/bot_wp/funciones/Panel/endpoints";
+  "https://elceibo.3devsnet.com/api/bot_wp/funciones/Panel/endpoints";
 
 const ROUTE_PREFETCH = {
   "/alumnos": () => import("../Alumnos/Alumno"),
@@ -323,11 +322,6 @@ const Principal = () => {
         label: "Socios",
         icon: faUsers,
         ruta: "/alumnos",
-        children: [
-          { label: "Gestionar socios", ruta: "/alumnos" },
-          { label: "Familias", ruta: "/familias" },
-          { label: "Dados de baja", ruta: "/alumnos/baja" },
-        ],
       },
       {
         key: "cuotas",
@@ -345,7 +339,7 @@ const Principal = () => {
         key: "administracion",
         label: "Administración",
         icon: faLayerGroup,
-        ruta: "/tipos-documentos",
+        ruta: "/categorias",
         children: [
           { label: "Tipos de documento", ruta: "/tipos-documentos" },
           { label: "Categorías", ruta: "/categorias" },
@@ -446,7 +440,7 @@ const Principal = () => {
   const defaultSubRoutes = useMemo(
     () => ({
       alumnos: "/alumnos",
-      administracion: "/tipos-documentos",
+      administracion: "/categorias",
     }),
     []
   );
@@ -515,12 +509,12 @@ const Principal = () => {
             title="Ir al inicio"
             aria-label="Ir al inicio"
           >
-            <img src={logoRH} alt="Logo IPET 50" className="mov-topbar__logoImg" />
+            <img src={logoRH} alt="Logo El Ceibo" className="mov-topbar__logoImg" />
           </button>
 
           <div className="mov-topbar__titles">
             <div className="mov-topbar__sysname">
-              <span className="mov-topbar__brandName">COOPERADORA IPET 50</span>
+              <span className="mov-topbar__brandName">EL CEIBO</span>
               <span className="mov-topbar__brandDot">•</span>
               <span className="mov-topbar__brandType">Sistema de Gestión</span>
             </div>

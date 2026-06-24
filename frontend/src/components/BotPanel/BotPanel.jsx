@@ -52,11 +52,11 @@ import { useModalEscapeStack } from "./modales/useModalEscapeStack";
 
 const PANEL_API =
   process.env.REACT_APP_BOT_PANEL_URL ||
-  "https://cooperadora.ipet50.edu.ar/api/bot_wp/funciones/Panel/endpoints";
+  "https://elceibo.3devsnet.com/api/bot_wp/funciones/Panel/endpoints";
 
 const PANEL_PUNTOS =
   process.env.REACT_APP_BOT_PANEL_PUNTOS_URL ||
-  "https://cooperadora.ipet50.edu.ar/api/bot_wp/funciones/Panel/puntos";
+  "https://elceibo.3devsnet.com/api/bot_wp/funciones/Panel/puntos";
 
 /** Hora HH:MM desde timestamp (ms) */
 const fmtHora = (ts) => {
@@ -164,11 +164,11 @@ const toTs = (value) => {
 
 const normStr = (v) => String(v ?? "").trim();
 
-const buildConsultaTemplateText = (respuesta, fallback = "Te escribimos desde la Cooperadora.") => {
+const buildConsultaTemplateText = (respuesta, fallback = "Te escribimos desde Club El Ceibo.") => {
   const body = normStr(respuesta) || fallback;
   return `Hola 👋
 
-Te respondemos desde la Cooperadora del IPET 50.
+Te respondemos desde Club El Ceibo.
 
 ${body}
 
@@ -2833,7 +2833,7 @@ const BotPanel = () => {
                       <div className="wp-template-preview-bubble">
                         <div>Hola 👋</div>
                         <br />
-                        <div>Te respondemos desde la Cooperadora del IPET 50.</div>
+                        <div>Te respondemos desde Club El Ceibo.</div>
                         <br />
                         <div
                           className={`wp-template-preview-var ${
