@@ -16,20 +16,16 @@ import "./ModalMesCuotas.css";
 
 /**
  * ✅ FIXES (pedido):
- * 1) "4 meses + matrícula" ya NO se muestra como "5 meses"
- *    - periodos => SOLO meses 1..12
- *    - extras_periodos => matrícula/anual por separado
- *    - cantidad_meses => SOLO meses reales
- *
- * 2) Al imprimir / PDF NO se cierra el modal automáticamente.
+ * 1) periodos => SOLO meses 1..12.
+ * 2) extras_periodos => anual/mitades por separado.
+ * 3) Al imprimir / PDF NO se cierra el modal automáticamente.
  *    - Se cierra solo con la X o Cancelar
  */
 
 // ====== IDs “extras” ======
 const ID_CONTADO_ANUAL = 13;
-const ID_MATRICULA = 14;
-const ID_CONTADO_ANUAL_H1 = 15; // Mar–Jul
-const ID_CONTADO_ANUAL_H2 = 16; // Ago–Dic
+const ID_CONTADO_ANUAL_H1 = 15; // Ene–Jun
+const ID_CONTADO_ANUAL_H2 = 16; // Jul–Dic
 
 const FALLBACK_MESES = [
   { id: 1, nombre: "Enero" },
@@ -50,32 +46,10 @@ const normalizar = (s = "") =>
   String(s).toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
 
 // ====== Descuento por hermanos ======
-const REFERENCIAS = {
-  INTERNO: { mensual: 50000, totals: { 2: 80000 } },
-  EXTERNO: { mensual: 6000, totals: { 2: 8000, 3: 10000 } },
-};
-
-function getPorcDescuentoDerivado(categoriaNombre = "", familyCount = 1) {
-  const catNorm = normalizar(categoriaNombre).includes("extern") ? "EXTERNO" : "INTERNO";
-  const ref = REFERENCIAS[catNorm];
-  if (!ref?.mensual || !ref?.totals) return 0;
-
-  const N = Math.max(1, Number(familyCount) || 1);
-  if (N === 1) return 0;
-
-  let Nref = ref.totals[N] ? N : undefined;
-  if (!Nref && N >= 3 && ref.totals[3]) Nref = 3;
-  if (!Nref && ref.totals[2]) Nref = 2;
-  if (!Nref) return 0;
-
-  const totalGrupoRef = Number(ref.totals[Nref] || 0);
-  const mensualRef = Number(ref.mensual || 0);
-  if (!(totalGrupoRef > 0) || !(mensualRef > 0)) return 0;
-
-  const perCapitaRef = totalGrupoRef / Nref;
-  const ratio = perCapitaRef / mensualRef;
-  const descuento = 1 - ratio;
-  return Math.max(0, Math.min(descuento, 0.95));
+function getPorcDescuentoDerivado() {
+  // El descuento familiar ya viene calculado desde el backend según la tabla descuentos_hermanos.
+  // Se deja en 0 para no aplicar dos veces el porcentaje sobre el monto final.
+  return 0;
 }
 
 const formatearARS = (monto) =>
@@ -112,8 +86,7 @@ function buildPeriodoCorto(mesesSolo, extras, mapMesNombre, anioTrabajo) {
 
   const extrasLabels = [];
   for (const id of (extras || [])) {
-    if (id === ID_MATRICULA) extrasLabels.push("Matrícula");
-    else if (id === ID_CONTADO_ANUAL) extrasLabels.push("Anual");
+    if (id === ID_CONTADO_ANUAL) extrasLabels.push("Anual");
     else if (id === ID_CONTADO_ANUAL_H1) extrasLabels.push("Anual 1ª");
     else if (id === ID_CONTADO_ANUAL_H2) extrasLabels.push("Anual 2ª");
     else extrasLabels.push(String(id));
@@ -185,7 +158,6 @@ const ModalMesCuotas = ({ socio, meses = [], anio, esExterno: esExternoProp = un
   const [selAnual, setSelAnual] = useState(false);
   const [selAnualH1, setSelAnualH1] = useState(false);
   const [selAnualH2, setSelAnualH2] = useState(false);
-  const [selMatricula, setSelMatricula] = useState(false);
 
   const [modoSalida, setModoSalida] = useState("imprimir");
   const [cargando, setCargando] = useState(false);
@@ -193,7 +165,6 @@ const ModalMesCuotas = ({ socio, meses = [], anio, esExterno: esExternoProp = un
   // ===== Datos base =====
   const [precioMensual, setPrecioMensual] = useState(0);
   const [montoAnual, setMontoAnual] = useState(0);
-  const [montoMatricula, setMontoMatricula] = useState(0);
   const [nombreCategoria, setNombreCategoria] = useState("");
 
   // ===== Familia =====
@@ -249,7 +220,6 @@ const ModalMesCuotas = ({ socio, meses = [], anio, esExterno: esExternoProp = un
     setSelAnual(false);
     setSelAnualH1(false);
     setSelAnualH2(false);
-    setSelMatricula(false);
   }, [anioTrabajo]);
 
   // ✅ Si se desmarca anual => reset mitades
@@ -301,7 +271,6 @@ const ModalMesCuotas = ({ socio, meses = [], anio, esExterno: esExternoProp = un
         if (!idAlumno) {
           setPrecioMensual(0);
           setMontoAnual(0);
-          setMontoMatricula(0);
           setNombreCategoria("");
           return;
         }
@@ -316,25 +285,20 @@ const ModalMesCuotas = ({ socio, meses = [], anio, esExterno: esExternoProp = un
             data?.monto_mensual ?? data?.monto ?? data?.precio ?? data?.Precio_Categoria ?? 0
           );
           const anual = Number(data?.monto_anual ?? 0);
-          const matri = Number(data?.monto_matricula ?? data?.matricula ?? 0);
-
           const nombre = (data?.categoria_nombre ?? data?.nombre_categoria ?? data?.nombre ?? "").toString();
 
           setPrecioMensual(Number.isFinite(mensual) ? mensual : 0);
           setMontoAnual(Number.isFinite(anual) ? anual : 0);
-          setMontoMatricula(Number.isFinite(matri) ? matri : 0);
           setNombreCategoria(nombre ? nombre.toUpperCase() : "");
         } else {
           setPrecioMensual(0);
           setMontoAnual(0);
-          setMontoMatricula(0);
           setNombreCategoria("");
         }
       } catch (e) {
         console.error("ModalMesCuotas obtener_monto_categoria error:", e);
         setPrecioMensual(0);
         setMontoAnual(0);
-        setMontoMatricula(0);
         setNombreCategoria("");
       }
     };
@@ -487,10 +451,9 @@ const ModalMesCuotas = ({ socio, meses = [], anio, esExterno: esExternoProp = un
   // ✅ Extras por separado
   const extrasSeleccionados = useMemo(() => {
     const extras = [];
-    if (selMatricula) extras.push(ID_MATRICULA);
     if (selAnual && anualConfig?.idPeriodo) extras.push(anualConfig.idPeriodo);
     return extras;
-  }, [selMatricula, selAnual, anualConfig?.idPeriodo]);
+  }, [selAnual, anualConfig?.idPeriodo]);
 
   // ✅ Completo (por si lo querés mostrar o usar para montos)
   const periodosCompletos = useMemo(
@@ -505,8 +468,7 @@ const ModalMesCuotas = ({ socio, meses = [], anio, esExterno: esExternoProp = un
 
     const labels = [];
     for (const id of periodosCompletos) {
-      if (id === ID_MATRICULA) labels.push("MATRÍCULA");
-      else if (id === ID_CONTADO_ANUAL) labels.push("CONTADO ANUAL");
+      if (id === ID_CONTADO_ANUAL) labels.push("CONTADO ANUAL");
       else if (id === ID_CONTADO_ANUAL_H1) labels.push("CONTADO ANUAL (1ª mitad)");
       else if (id === ID_CONTADO_ANUAL_H2) labels.push("CONTADO ANUAL (2ª mitad)");
       else labels.push((mapMesNombre.get(Number(id)) || String(id)).trim());
@@ -537,7 +499,6 @@ const ModalMesCuotas = ({ socio, meses = [], anio, esExterno: esExternoProp = un
       }
 
       if (id >= 1 && id <= 12) mp[id] = Math.max(0, Math.round(Number(precioMensualConDescuento || 0)));
-      else if (id === ID_MATRICULA) mp[id] = Math.max(0, Math.round(Number(montoMatricula || 0)));
       else if (id === ID_CONTADO_ANUAL) mp[id] = Math.max(0, Math.round(Number(montoAnualConDescuento || 0)));
       else if (id === ID_CONTADO_ANUAL_H1 || id === ID_CONTADO_ANUAL_H2) {
         const base = Math.max(0, Math.round(Number(montoAnualConDescuento || 0)));
@@ -551,7 +512,6 @@ const ModalMesCuotas = ({ socio, meses = [], anio, esExterno: esExternoProp = un
     periodosEstado,
     montosReales,
     precioMensualConDescuento,
-    montoMatricula,
     montoAnualConDescuento,
   ]);
 
@@ -571,7 +531,7 @@ const ModalMesCuotas = ({ socio, meses = [], anio, esExterno: esExternoProp = un
       // periodos => SOLO meses (así periodos.length = cantidad real de meses)
       periodos: [...mesesSeleccionadosSolo],
 
-      // ✅ extras separados (matrícula/anual)
+      // ✅ extras separados (anual/mitades)
       extras_periodos: [...extrasSeleccionados],
 
       // ✅ completo por si tu impresión lo necesita
@@ -832,26 +792,6 @@ const ModalMesCuotas = ({ socio, meses = [], anio, esExterno: esExternoProp = un
               <div className="modmes_extras-title">EXTRAS</div>
 
               <div className={`modmes_extras-grid ${selAnual ? "is-anual" : ""}`}>
-                {/* MATRÍCULA */}
-                <label className={`modmes_extra-card ${selMatricula ? "is-checked" : ""}`}>
-                  <span className="modmes_extra-check">
-                    <input type="checkbox" checked={selMatricula} onChange={(e) => setSelMatricula(e.target.checked)} />
-                    <span className="modmes_extra-box" aria-hidden="true" />
-                  </span>
-
-                  <span className="modmes_extra-main">
-                    <span className="modmes_extra-top">
-                      <span className="modmes_extra-name">MATRÍCULA</span>
-                      {labelEstado(ID_MATRICULA) ? (
-                        <span className="modmes_extra-state">{labelEstado(ID_MATRICULA)}</span>
-                      ) : null}
-                    </span>
-                    <span className="modmes_extra-amount">
-                      {formatearARS(montosReales?.[ID_MATRICULA] ?? montoMatricula ?? 0)}
-                    </span>
-                  </span>
-                </label>
-
                 {/* CONTADO ANUAL */}
                 <label className={`modmes_extra-card ${selAnual ? "is-checked" : ""}`}>
                   <span className="modmes_extra-check">
@@ -892,7 +832,7 @@ const ModalMesCuotas = ({ socio, meses = [], anio, esExterno: esExternoProp = un
                           <span className="modmes_extra-state">{labelEstado(ID_CONTADO_ANUAL_H1)}</span>
                         ) : null}
                       </span>
-                      <span className="modmes_extra-sub">Mar–Jul</span>
+                      <span className="modmes_extra-sub">Ene–Jun</span>
                     </span>
                   </label>
                 )}
@@ -912,7 +852,7 @@ const ModalMesCuotas = ({ socio, meses = [], anio, esExterno: esExternoProp = un
                           <span className="modmes_extra-state">{labelEstado(ID_CONTADO_ANUAL_H2)}</span>
                         ) : null}
                       </span>
-                      <span className="modmes_extra-sub">Ago–Dic</span>
+                      <span className="modmes_extra-sub">Jul–Dic</span>
                     </span>
                   </label>
                 )}

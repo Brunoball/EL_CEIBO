@@ -31,9 +31,11 @@
   /* si tu app tiene header fijo global, ajústalo acá */
   --global-header-h: 90.33px;
 
-  /* acento rojo de la sección */
-  --danger:#b71c1c;
-  --reg-primary: var(--danger);
+  /* acento azul institucional de la sección */
+  --danger:#b71c1c; /* solo para acciones peligrosas */
+  --reg-primary: var(--blue-inst-primary, #2563EB);
+  --reg-primary-light: var(--blue-inst-primary-light, #3B82F6);
+  --reg-primary-dark: var(--blue-inst-primary-dark, #1D4ED8);
 
   /* KPI cards */
   --kpi-card-bg:#fff;
@@ -244,14 +246,14 @@ small { font-size: var(--fs-small); color: var(--muted); }
 .ing-tablewrap.is-loading .ing-row.data { opacity: .55; filter: grayscale(.1); }
 
 /* =========================
-   TABLA BASE (ALUMNOS) – 6 columnas
+   TABLA BASE (SOCIOS) – 6 columnas
    ========================= */
 .ing-row.h {
   position: sticky; top: 0; z-index: 2;
   background: #f7f7fb; color: #64748b; border-bottom: 1px solid var(--border);
   font-weight: 900; font-size: var(--fs-th);
   display: grid; align-items: center; gap: 0;
-  /* Fecha | Alumno | Categoría | Monto | Medio | Mes */
+  /* Fecha | Socio | Categoría | Monto | Medio | Mes */
   grid-template-columns: 0.8fr 1.6fr .7fr 0.9fr 1.0fr 1.2fr; /* ← FIX: 6 columnas */
   padding: 10px 12px;
 }
@@ -268,7 +270,7 @@ small { font-size: var(--fs-small); color: var(--muted); }
 
 /* mínimos de columna para evitar solapamientos */
 .c-fecha   { min-width: 110px; }
-.c-alumno  { min-width: 220px; }
+.c-socio  { min-width: 220px; }
 .c-cat     { min-width: 120px; }
 .c-monto   { min-width: 120px; }
 .c-medio   { min-width: 120px; text-align: center; }
@@ -276,16 +278,16 @@ small { font-size: var(--fs-small); color: var(--muted); }
 
 .ing-row > div { padding: 2px 4px; }
 .t-right { text-align: right; }
-.c-alumno { overflow: hidden; }
+.c-socio { overflow: hidden; }
 
 .name-small{ font-size: 0.92rem; line-height: 1.25; }
 
 /* chips de categoría */
 .c-cat .pill { white-space: nowrap; }
 .c-cat-aling{ display: flex; justify-content: center; align-items: center;}
-.ing-alumno { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.ing-alumno__text { min-width: 0; }
-.ing-alumno__text .muted { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ing-socio { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ing-socio__text { min-width: 0; }
+.ing-socio__text .muted { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .pill {
   display: inline-block; padding: 6px 10px; 
@@ -336,11 +338,11 @@ small { font-size: var(--fs-small); color: var(--muted); }
   .seg-search input{ width: 120px; font-size: .88rem; }
 }
 
-/* === Degradado rojo global (para barras/tabs generales) === */
-@supports (background: color-mix(in oklch, red, white)){
+/* === Color azul global (para barras/tabs generales) === */
+@supports (background: color-mix(in oklch, blue, white)){
   :root{
-    --brand-red-base: var(--reg-primary, var(--danger, #dc2626));
-    --brand-red-strong: color-mix(in oklch, var(--brand-red-base) 70%, red 30%);
+    --brand-red-base: var(--reg-primary, var(--primary, #2563EB));
+    --brand-red-strong: var(--reg-primary-dark, #1D4ED8);
   }
   .gradient--brand-red{
     background: var(--reg-primary);
@@ -364,11 +366,11 @@ small { font-size: var(--fs-small); color: var(--muted); }
 .gradient--brand-red .btn.ghost:hover{ background: rgba(255,255,255,.18); }
 .gradient--brand-red .btn.solid{
   background:#fff; color:var(--primary); border-color:transparent;
-  box-shadow: 0 8px 18px rgba(184,28,28,.22);
+  box-shadow: 0 8px 18px rgba(37,99,235,.22);
 }
 
 
-/* ===== Franja roja del sidebar ===== */
+/* ===== Franja azul del sidebar ===== */
 .ing-side__row--top.gradient--brand-red{
   margin: -16px -16px 0px;
   padding: 17.4px 16px;
@@ -559,9 +561,9 @@ small { font-size: var(--fs-small); color: var(--muted); }
 }
 .ing-catitem-btn:hover{ transform: translateY(-1px); border-color:#dfe3ea; background:#fefefe; }
 .ing-catitem-btn.active{
-  background: linear-gradient(135deg, var(--reg-primary), #a31212);
-  border-color: #a31212; color:#fff;
-  box-shadow: 0 0 0 4px rgba(248,113,113,.16) inset, 0 8px 20px rgba(185,28,28,.18);
+  background: linear-gradient(135deg, var(--reg-primary), var(--reg-primary-dark, #1D4ED8));
+  border-color: var(--reg-primary-dark, #1D4ED8); color:#fff;
+  box-shadow: 0 0 0 4px rgba(59,130,246,.16) inset, 0 8px 20px rgba(37,99,235,.18);
 }
 .ing-catitem-btn.active .ing-catamount{ color:#fff; }
 .ing-catitem-btn.active .ing-catmeta{ color: rgba(255,255,255,.9); font-weight:700; }
@@ -577,7 +579,7 @@ small { font-size: var(--fs-small); color: var(--muted); }
 }
 
 /* Asegurar ellipsis en columnas textuales largas */
-.c-alumno .name-small,
+.c-socio .name-small,
 .c-proveedor,
 .c-imputacion,
 .c-medio,

@@ -49,20 +49,19 @@ try {
                 a.telefono,
                 a.`id_año`   AS id_anio,
                 a.id_division,
-                a.id_categoria,
-                a.id_cat_monto,                       -- ⬅️ NUEVO
+                a.id_cat_monto AS id_categoria, -- alias de compatibilidad frontend
+                a.id_cat_monto,
                 a.ingreso,
                 a.observaciones,
-                an.`nombre_año`      AS anio_nombre,
-                d.`nombre_division`  AS division_nombre,
-                c.`nombre_categoria` AS categoria_nombre,
-                cm.`nombre_categoria` AS catm_nombre, -- opcional
+                an.`nombre_año`       AS anio_nombre,
+                d.`nombre_division`   AS division_nombre,
+                cm.`nombre_categoria` AS categoria_nombre,
+                cm.`nombre_categoria` AS catm_nombre,
                 cm.`monto_mensual`    AS catm_monto_mensual
             FROM alumnos a
-            LEFT JOIN anio an            ON an.`id_año`      = a.`id_año`
-            LEFT JOIN division d         ON d.`id_division`  = a.`id_division`
-            LEFT JOIN categoria c        ON c.`id_categoria` = a.`id_categoria`
-            LEFT JOIN categoria_monto cm ON cm.`id_cat_monto`= a.`id_cat_monto`
+            LEFT JOIN anio an             ON an.`id_año`      = a.`id_año`
+            LEFT JOIN division d          ON d.`id_division`  = a.`id_division`
+            LEFT JOIN categoria_monto cm  ON cm.`id_cat_monto`= a.`id_cat_monto`
             WHERE a.id_alumno = ?
             LIMIT 1
         ";
@@ -71,7 +70,7 @@ try {
         $alumno = $st->fetch(PDO::FETCH_ASSOC);
 
         if ($alumno) echo json_encode(['exito' => true, 'alumno' => $alumno], JSON_UNESCAPED_UNICODE);
-        else        echo json_encode(['exito' => false, 'mensaje' => 'Alumno no encontrado']);
+        else        echo json_encode(['exito' => false, 'mensaje' => 'Socio no encontrado']);
         exit;
     }
 
@@ -82,11 +81,17 @@ try {
         $id = isset($data['id_alumno']) ? (int)$data['id_alumno'] : 0;
         if ($id <= 0) { echo json_encode(['exito' => false, 'mensaje' => 'ID no proporcionado']); exit; }
 
+        // Si llega id_categoria desde algún frontend viejo, lo convertimos a id_cat_monto.
+        if ((!isset($data['id_cat_monto']) || $data['id_cat_monto'] === '') && isset($data['id_categoria'])) {
+            $data['id_cat_monto'] = $data['id_categoria'];
+        }
+        unset($data['id_categoria']);
+
         // campos admitidos
         $admitidos = [
             'apellido','nombre','id_tipo_documento','num_documento','id_sexo',
             'domicilio','localidad','telefono',
-            'id_anio','id_division','id_categoria','id_cat_monto', // ⬅️ agregamos id_cat_monto
+            'id_anio','id_division','id_cat_monto',
             'ingreso','observaciones'
         ];
 
@@ -106,7 +111,15 @@ try {
                 $set[] = "`id_año` = ?"; $val[] = ($v !== null ? (int)$v : null); continue;
             }
 
-            if (in_array($k, ['id_tipo_documento','id_sexo','id_division','id_categoria','id_cat_monto'], true)) {
+            if (in_array($k, ['id_tipo_documento','id_sexo','id_division','id_cat_monto'], true)) {
+                if ($k === 'id_cat_monto' && $v !== null) {
+                    $stCat = $pdo->prepare('SELECT 1 FROM categoria_monto WHERE id_cat_monto = ? LIMIT 1');
+                    $stCat->execute([(int)$v]);
+                    if (!$stCat->fetchColumn()) {
+                        echo json_encode(['exito'=>false,'mensaje'=>'La categoría seleccionada no existe. Actualizá la página y volvé a intentar.'], JSON_UNESCAPED_UNICODE);
+                        exit;
+                    }
+                }
                 $set[] = "$k = ?"; $val[] = ($v !== null ? (int)$v : null); continue;
             }
 
@@ -130,7 +143,7 @@ try {
             $chk = $pdo->prepare("SELECT 1 FROM alumnos WHERE num_documento = ? AND id_alumno <> ? LIMIT 1");
             $chk->execute([$data['num_documento'], $id]);
             if ($chk->fetchColumn()) {
-                echo json_encode(['exito' => false, 'mensaje' => 'Ya existe un alumno con ese Documento.']); exit;
+                echo json_encode(['exito' => false, 'mensaje' => 'Ya existe un socio con ese Documento.']); exit;
             }
         }
 
@@ -139,7 +152,7 @@ try {
         $st = $pdo->prepare($sql);
         $st->execute($val);
 
-        echo json_encode(['exito' => true, 'mensaje' => 'Alumno actualizado correctamente']);
+        echo json_encode(['exito' => true, 'mensaje' => 'Socio actualizado correctamente']);
         exit;
     }
 

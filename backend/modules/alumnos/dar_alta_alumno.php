@@ -39,7 +39,7 @@ try {
 
     if ($id_alumno <= 0) {
         http_response_code(422);
-        echo json_encode(['exito' => false, 'mensaje' => 'ID de alumno inválido']);
+        echo json_encode(['exito' => false, 'mensaje' => 'ID de socio inválido']);
         exit;
     }
 
@@ -86,7 +86,7 @@ try {
     http_response_code(500);
     echo json_encode([
         'exito'   => false,
-        'mensaje' => 'Error al dar de alta al alumno: ' . $e->getMessage()
+        'mensaje' => 'Error al dar de alta al socio: ' . $e->getMessage()
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

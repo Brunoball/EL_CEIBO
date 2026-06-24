@@ -15,7 +15,8 @@ try {
 
     $listas = [
         'anios'                    => [],
-        'categorias'               => [],   // sigue viniendo de categoria_monto
+        'categorias'               => [],   // única categoría del club: viene de categoria_monto
+        'categorias_monto'         => [],   // alias de compatibilidad
         'divisiones'               => [],
         'meses'                    => [],
         'sexos'                    => [],
@@ -55,13 +56,17 @@ try {
             FROM `categoria_monto`
             ORDER BY `nombre_categoria`";
     foreach ($pdo->query($sql, PDO::FETCH_ASSOC) as $row) {
-        $listas['categorias'][] = [
+        $cat = [
             'id'              => (int) $row['id'],
+            'id_cat_monto'    => (int) $row['id'],
             'nombre'          => (string) $row['nombre'],
+            'nombre_categoria'=> (string) $row['nombre'],
             'monto_mensual'   => (int) $row['monto_mensual'],
             'monto_anual'     => (int) $row['monto_anual'],
             'fecha_creacion'  => (string) $row['fecha_creacion'],
         ];
+        $listas['categorias'][] = $cat;
+        $listas['categorias_monto'][] = $cat;
     }
 
     /* --------- DIVISIONES -------- */

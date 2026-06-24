@@ -12,6 +12,8 @@ import {
   faTrash,
   faEdit,
   faClockRotateLeft,
+  faPercent,
+  faSave,
 } from '@fortawesome/free-solid-svg-icons';
 import './Categorias.css';
 
@@ -90,6 +92,199 @@ const fmtARS = (n) =>
   (n === null || n === undefined || n === '')
     ? '—'
     : Number(n).toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
+
+
+
+/* ===========================
+   Descuento familiar general
+=========================== */
+function DescuentosFamiliaresPanel({ showToast }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [nuevoCant, setNuevoCant] = useState('2');
+  const [nuevoPct, setNuevoPct] = useState('');
+
+  const fetchJSONLocal = async (url, options = {}) => {
+    const res = await fetch(url, options);
+    const text = await res.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; }
+    catch { throw new Error(`Respuesta no JSON (HTTP ${res.status})`); }
+    if (!res.ok) throw new Error(data?.mensaje || `Error HTTP ${res.status}`);
+    return data;
+  };
+
+  const normalizar = (arr) => [...(arr || [])]
+    .map((r) => ({
+      id_descuento_hermanos: r.id_descuento_hermanos ?? null,
+      cantidad_hermanos: Number(r.cantidad_hermanos),
+      porcentaje_descuento: String(Number(r.porcentaje_descuento ?? 0)),
+    }))
+    .filter((r) => Number.isFinite(r.cantidad_hermanos) && r.cantidad_hermanos >= 2)
+    .sort((a, b) => a.cantidad_hermanos - b.cantidad_hermanos);
+
+  const cargar = async () => {
+    try {
+      setLoading(true);
+      const json = await fetchJSONLocal(`${BASE_URL}/api.php?action=descuentos_hermanos_listar`);
+      const filas = Array.isArray(json?.items) ? json.items : (Array.isArray(json) ? json : []);
+      setItems(normalizar(filas));
+    } catch (e) {
+      console.error(e);
+      setItems([]);
+      showToast?.('error', `No se pudieron cargar los descuentos familiares: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { cargar(); }, []);
+
+  const yaExiste = (cant) => items.some((x) => Number(x.cantidad_hermanos) === Number(cant));
+
+  const agregarFila = () => {
+    const cant = Number(nuevoCant);
+    const pct = nuevoPct === '' ? 0 : Number(nuevoPct);
+
+    if (!Number.isFinite(cant) || cant < 2) {
+      showToast?.('error', 'La cantidad de hermanos debe ser 2 o más.');
+      return;
+    }
+    if (yaExiste(cant)) {
+      showToast?.('info', `Ya existe una configuración para ${cant} hermanos.`);
+      return;
+    }
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      showToast?.('error', 'El porcentaje debe estar entre 0 y 100.');
+      return;
+    }
+
+    setItems((prev) => normalizar([
+      ...prev,
+      { id_descuento_hermanos: null, cantidad_hermanos: cant, porcentaje_descuento: String(pct) },
+    ]));
+    setNuevoCant(String(cant + 1));
+    setNuevoPct('');
+  };
+
+  const cambiarFila = (idx, key, value) => {
+    setItems((prev) => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], [key]: value };
+      return next;
+    });
+  };
+
+  const quitarFila = (idx) => {
+    setItems((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const guardar = async () => {
+    const normalizados = [];
+    const vistos = new Set();
+
+    for (const row of items) {
+      const cant = Number(row.cantidad_hermanos);
+      const pct = Number(row.porcentaje_descuento);
+
+      if (!Number.isFinite(cant) || cant < 2) {
+        showToast?.('error', 'Hay una cantidad de hermanos inválida.');
+        return;
+      }
+      if (vistos.has(cant)) {
+        showToast?.('error', `La cantidad ${cant} hermanos está repetida.`);
+        return;
+      }
+      if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+        showToast?.('error', `Porcentaje inválido para ${cant} hermanos.`);
+        return;
+      }
+
+      vistos.add(cant);
+      normalizados.push({ cantidad_hermanos: cant, porcentaje_descuento: pct });
+    }
+
+    try {
+      setSaving(true);
+      const json = await fetchJSONLocal(`${BASE_URL}/api.php?action=descuentos_hermanos_guardar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ descuentos: normalizados }),
+      });
+      if (!json?.exito) throw new Error(json?.mensaje || 'No se pudieron guardar los descuentos.');
+      showToast?.('exito', 'Descuentos familiares guardados.');
+      await cargar();
+    } catch (e) {
+      console.error(e);
+      showToast?.('error', e.message || 'No se pudieron guardar los descuentos.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="cat_family_panel">
+      <div className="cat_family_head">
+        <div>
+          <h3 className="cat_family_title">
+            <FontAwesomeIcon icon={faPercent} /> Descuento familiar general
+          </h3>
+          <p className="cat_family_desc">
+            Configurá el porcentaje sobre el total del grupo. Ejemplo: si hay 3 hermanos con categorías distintas, cuotas suma los 3 montos y aplica el porcentaje de “3 hermanos”.
+          </p>
+        </div>
+        <button className="cat_btn cat_btn_primary" onClick={guardar} disabled={saving || loading} type="button">
+          <FontAwesomeIcon icon={faSave} /> {saving ? 'Guardando…' : 'Guardar descuentos'}
+        </button>
+      </div>
+
+      <div className="cat_family_add">
+        <div className="cat_family_field">
+          <label>Cantidad de hermanos</label>
+          <input type="number" min="2" step="1" value={nuevoCant} onChange={(e) => setNuevoCant(e.target.value)} disabled={saving} />
+        </div>
+        <div className="cat_family_field">
+          <label>% descuento</label>
+          <input type="number" min="0" max="100" step="0.01" value={nuevoPct} onChange={(e) => setNuevoPct(e.target.value)} placeholder="Ej: 10" disabled={saving} />
+        </div>
+        <button className="cat_btn cat_btn_outline" onClick={agregarFila} disabled={saving} type="button">
+          <FontAwesomeIcon icon={faPlus} /> Agregar
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="cat_family_empty">Cargando descuentos familiares…</div>
+      ) : items.length === 0 ? (
+        <div className="cat_family_empty">No hay descuentos familiares configurados. Si una familia tiene hermanos y no hay fila exacta, no se descuenta nada.</div>
+      ) : (
+        <div className="cat_family_rows">
+          {items.map((row, idx) => (
+            <div className="cat_family_row" key={`${row.id_descuento_hermanos ?? 'new'}_${row.cantidad_hermanos}_${idx}`}>
+              <div className="cat_family_badge">{row.cantidad_hermanos}</div>
+              <div className="cat_family_label"><strong>{row.cantidad_hermanos}</strong> hermanos</div>
+              <div className="cat_family_field cat_family_field_inline">
+                <label>% descuento</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={row.porcentaje_descuento}
+                  onChange={(e) => cambiarFila(idx, 'porcentaje_descuento', e.target.value)}
+                  disabled={saving}
+                />
+              </div>
+              <button className="cat_icon_btn cat_icon_btn_danger" onClick={() => quitarFila(idx)} disabled={saving} title="Quitar" type="button">
+                <FontAwesomeIcon icon={faTrash} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
 
 /* ===========================
    Componente principal
@@ -267,6 +462,8 @@ const Categorias = () => {
             ))
           )}
         </div>
+
+        <DescuentosFamiliaresPanel showToast={showToast} />
 
         <section className="cat_toolbar">
           <button

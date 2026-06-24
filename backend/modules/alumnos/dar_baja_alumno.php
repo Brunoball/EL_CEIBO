@@ -21,7 +21,7 @@ try {
     $motivo    = isset($payload['motivo']) ? trim((string)$payload['motivo']) : '';
 
     if ($id_alumno <= 0) {
-        echo json_encode(['exito' => false, 'mensaje' => 'ID de alumno inválido']);
+        echo json_encode(['exito' => false, 'mensaje' => 'ID de socio inválido']);
         exit;
     }
     if ($motivo === '') {

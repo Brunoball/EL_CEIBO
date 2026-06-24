@@ -257,7 +257,7 @@ export default function ModalMiembros({ open, onClose, familia, notify, onDeltaC
     } catch {
       try {
         const r2 = await fetch(
-          `${BASE_URL}/api.php?action=socios_sin_familia&ts=${Date.now()}`,
+          `${BASE_URL}/api.php?action=alumnos_sin_familia&ts=${Date.now()}`,
           { cache: 'no-store' }
         );
         const j2 = await r2.json();
@@ -277,7 +277,7 @@ export default function ModalMiembros({ open, onClose, familia, notify, onDeltaC
         });
         setCandidatosAll(rows);
       } catch {
-        notify?.('Error al obtener alumnos sin familia', 'error');
+        notify?.('Error al obtener socios sin familia', 'error');
       }
     } finally {
       setLoading(false);
@@ -502,7 +502,7 @@ export default function ModalMiembros({ open, onClose, familia, notify, onDeltaC
                   value={q}
                   onChange={(e) => startTransition(() => setQ(e.target.value))}
                   onKeyDown={onSearchKeyDown}
-                  aria-label="Buscar alumnos"
+                  aria-label="Buscar socios"
                 />
                 <button
                   className="modalmi-search-ico"

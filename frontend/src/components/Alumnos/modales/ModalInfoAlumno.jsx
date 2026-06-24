@@ -69,17 +69,17 @@ const ModalInfoAlumno = ({ mostrar, alumno, onClose }) => {
   const lugarNac  = texto(alumno.lugar_nacimiento);
   const fechaNac  = formatearFecha(alumno.fecha_nacimiento);
 
-  // Académico (curso/categoría “lógica”)
+  // Cuota/categoría
   const anio      = alumno.anio_nombre      || alumno.nombre_año      || alumno.nombre_anio || texto(alumno.id_año);
   const division  = alumno.division_nombre  || alumno.nombre_division || texto(alumno.id_division);
-  const categoria = alumno.categoria_nombre || alumno.nombre_categoria|| texto(alumno.id_categoria);
-
-  // ✅ Categoría de monto (categoria_monto)
-  const catMontoNombre   =
+  const categoria =
+    alumno.categoria_nombre ||
+    alumno.nombre_categoria ||
     alumno.catm_nombre ||
     alumno.categoria_monto_nombre ||
     alumno.nombre_categoria_monto ||
-    texto(alumno.id_cat_monto);
+    texto(alumno.id_cat_monto || alumno.id_categoria);
+
   const catMontoMensual  =
     alumno.catm_monto_mensual ?? alumno.monto_mensual ?? null;
   const catMontoAnual    =
@@ -103,7 +103,7 @@ const ModalInfoAlumno = ({ mostrar, alumno, onClose }) => {
         {/* Header violeta */}
         <div className="mi-modal__header">
           <div className="mi-modal__head-left">
-            <h2 className="mi-modal__title">Información del Alumno</h2>
+            <h2 className="mi-modal__title">Información del Socio</h2>
             <p className="mi-modal__subtitle">
               ID: {alumno.id_alumno ?? '-'} &nbsp;|&nbsp; {nombreCompleto}
             </p>
@@ -206,13 +206,13 @@ const ModalInfoAlumno = ({ mostrar, alumno, onClose }) => {
             <section className="mi-tabpanel is-active">
               <div className="mi-grid">
                 <article className="mi-card">
-                  <h3 className="mi-card__title">Curso</h3>
+                  <h3 className="mi-card__title">Cuota</h3>
                   <div className="mi-row">
-                    <span className="mi-label">Año</span>
+                    
                     <span className="mi-value">{texto(anio)}</span>
                   </div>
                   <div className="mi-row">
-                    <span className="mi-label">División</span>
+                    
                     <span className="mi-value">{texto(division)}</span>
                   </div>
                 </article>
@@ -220,17 +220,8 @@ const ModalInfoAlumno = ({ mostrar, alumno, onClose }) => {
                 <article className="mi-card">
                   <h3 className="mi-card__title">Categoría</h3>
                   <div className="mi-row">
-                    <span className="mi-label">Categoría</span>
-                    <span className="mi-value">{texto(categoria)}</span>
-                  </div>
-                </article>
-
-                {/* ✅ NUEVO: Categoría de monto (categoria_monto) */}
-                <article className="mi-card">
-                  <h3 className="mi-card__title">Categoría (monto)</h3>
-                  <div className="mi-row">
                     <span className="mi-label">Nombre</span>
-                    <span className="mi-value">{texto(catMontoNombre)}</span>
+                    <span className="mi-value">{texto(categoria)}</span>
                   </div>
                   <div className="mi-row">
                     <span className="mi-label">Monto mensual</span>

@@ -1,36 +1,44 @@
-/* ====== :root ROJO (sin degradados) — variables con prefijo reg- ====== */
+/* ====== :root AZUL institucional (sin degradados) — variables con prefijo reg- ====== */
 :root {
-  --global-header-h: 86px; /* ALTURA DE TU HEADER FIJO */
+  --global-header-h: 86px;
 
-  --reg-primary: #B71C1C;
-  --reg-primary-light: #E53935;
-  --reg-primary-dark: #7F0000;
+  /* 🎨 PALETA AZUL */
+  --reg-primary: var(--blue-inst-primary, #2563EB);
+  --reg-primary-light: var(--blue-inst-primary-light, #3B82F6);
+  --reg-primary-dark: var(--blue-inst-primary-dark, #1D4ED8);
 
-  --reg-secondary: #1D428A;
-  --reg-accent: #C62828;
+  --reg-secondary: var(--blue-inst-secondary, #1D428A);
+  --reg-accent: var(--blue-inst-accent, #60A5FA);
 
-  --reg-success: #10B981;
-  --reg-danger: #D32F2F;
+  --reg-success: var(--blue-inst-success, #10B981);
+  --reg-warning: var(--blue-inst-warning, #F59E0B);
+  --reg-danger: var(--blue-inst-danger, #D32F2F);
 
-  --reg-light: #F8FAFC;
-  --reg-dark: #0F172A;
+  --reg-light: var(--blue-inst-light, #F8FAFC);
+  --reg-dark: var(--blue-inst-dark, #0F172A);
 
-  --reg-gray-100: #F1F5F9;
-  --reg-gray-200: #E2E8F0;
-  --reg-gray-300: #CBD5E1;
-  --reg-gray-400: #94A3B8;
-  --reg-gray-500: #64748B;
-  --reg-gray-600: #475569;
-  --reg-gray-700: #334155;
+  --reg-gray-100: var(--blue-inst-gray-100, #F1F5F9);
+  --reg-gray-200: var(--blue-inst-gray-200, #E2E8F0);
+  --reg-gray-300: var(--blue-inst-gray-300, #CBD5E1);
+  --reg-gray-400: var(--blue-inst-gray-400, #94A3B8);
+  --reg-gray-500: var(--blue-inst-gray-500, #64748B);
+  --reg-gray-600: var(--blue-inst-gray-600, #475569);
+  --reg-gray-700: var(--blue-inst-gray-700, #334155);
+  --reg-gray-800: var(--blue-inst-gray-800, #1E293B);
+  --reg-gray-900: var(--blue-inst-gray-900, #0F172A);
 
-  --reg-border-radius: 12px;
-  --reg-border-radius-lg: 16px;
-  --reg-transition: all .25s ease;
+  --reg-border-radius: var(--blue-inst-radius, 12px);
+  --reg-border-radius-lg: var(--blue-inst-radius-lg, 16px);
+  --reg-border-radius-xl: var(--blue-inst-radius-xl, 20px);
 
-  --reg-shadow-sm: 0 1px 2px rgba(0,0,0,.06);
-  --reg-shadow-md: 0 6px 14px rgba(15,23,42,.08);
-  --reg-shadow-lg: 0 14px 28px rgba(15,23,42,.10);
+  --reg-transition: var(--blue-inst-transition, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+
+  --reg-shadow-sm: var(--blue-inst-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
+  --reg-shadow-md: var(--blue-inst-shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06));
+  --reg-shadow-lg: var(--blue-inst-shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05));
+  --reg-shadow-xl: var(--blue-inst-shadow-xl, 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04));
 }
+
 
 /* =============== Tokens del componente =============== */
 .rc_shell {
@@ -46,7 +54,7 @@
 .rc_shell {
   display: grid;
   grid-template-columns: clamp(15rem, 22vw, 18rem) 1fr;
-  background: linear-gradient(135deg, #ffebee 30%, var(--td-primary) 70%);
+  background: linear-gradient(135deg, #E0E7FF 30%, var(--reg-primary) 70%);
   height: calc(100vh - var(--global-header-h));
   min-height: calc(100vh - var(--global-header-h));
   min-width: 0;
@@ -71,7 +79,7 @@
   overflow: hidden;
 }
 
-/* Franja roja superior de la sidebar */
+/* Franja azul superior de la sidebar */
 .rc_side_header {
   background: var(--reg-primary);
   color: #fff;
@@ -205,7 +213,7 @@
   box-shadow: var(--reg-shadow-md);
 }
 
-/* Header rojo en todas las tarjetas */
+/* Header azul en todas las tarjetas */
 .rc_card__header {
   background: var(--reg-primary);
   color: #fff;
@@ -233,7 +241,7 @@
   letter-spacing: .01em;
 }
 
-/* Tabs sobre fondo rojo */
+/* Tabs sobre fondo azul */
 .rc_tabs_main {
   margin-left: auto;
   background: #ffffff22;

@@ -40,7 +40,7 @@
   overflow: hidden;
 }
 
-/* Head con franja roja (sólo dentro del modal) */
+/* Head con franja azul (sólo dentro del modal) */
 .ing-modal__head.gradient--brand-red{
   display: flex;
   align-items: center;
@@ -49,7 +49,7 @@
   padding: 14px 16px;
   color: #fff;
   border-bottom: 1px solid rgba(255,255,255,.18);
-  background: var(--reg-primary, #b91c1c); /* degradado simplificado */
+  background: var(--reg-primary, #2563EB); /* degradado simplificado */
 }
 
 /* Título y badge del modal */
@@ -173,9 +173,9 @@
 }
 
 /* ===== Opcional: compatibilidad con cabecera roja del modal ===== */
-@supports (background: color-mix(in oklch, red, white)){
+@supports (background: color-mix(in oklch, blue, white)){
   .ing-modal__head.gradient--brand-red{
-    background: var(--reg-primary, #b91c1c);
+    background: var(--reg-primary, #2563EB);
   }
 }
 .ing-modal .span-2 { grid-column: 1 / -1; }
@@ -206,7 +206,7 @@
 }
 
 .ing-modal__head.gradient--brand-red{
-  position: sticky;          /* si usás la variante con franja roja */
+  position: sticky;          /* si usás la variante con franja azul */
   top: 0;
   z-index: 2;
 }

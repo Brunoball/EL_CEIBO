@@ -118,11 +118,11 @@ try {
 
   $idsCandidatos = [];
 
-  if ($id_mes >= 3 && $id_mes <= 7) {
-    // Marzo a Julio: anual completo o primera mitad
+  if ($id_mes >= 1 && $id_mes <= 6) {
+    // Enero a Junio: anual completo o primera mitad
     $idsCandidatos = [15, 13];
-  } elseif ($id_mes >= 8 && $id_mes <= 12) {
-    // Agosto a Diciembre: anual completo o segunda mitad
+  } elseif ($id_mes >= 7 && $id_mes <= 12) {
+    // Julio a Diciembre: anual completo o segunda mitad
     $idsCandidatos = [16, 13];
   } else {
     // Otros períodos: buscar especiales por nombre

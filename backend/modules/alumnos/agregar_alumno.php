@@ -48,10 +48,20 @@ try {
     $domicilio         = $toUpper($data['domicilio'] ?? '', 150);
     $localidad         = $toUpper($data['localidad'] ?? '', 100);
     $telefono          = isset($data['telefono']) ? trim((string)$data['telefono']) : '';
-    $id_anio           = isset($data['id_año']) ? (int)$data['id_año'] : null;
-    $id_division       = isset($data['id_division']) ? (int)$data['id_division'] : null;
-    $id_categoria      = isset($data['id_categoria']) && $data['id_categoria'] !== '' ? (int)$data['id_categoria'] : null;
-    $id_cat_monto      = isset($data['id_cat_monto']) && $data['id_cat_monto'] !== '' ? (int)$data['id_cat_monto'] : null; // ⬅️ NUEVO
+
+    // En el prototipo para club no se usa año/curso ni división.
+    // Se dejan en NULL para compatibilidad con la base existente.
+    $id_anio           = null;
+    $id_division       = null;
+
+    // ÚNICA categoría del club: categoria_monto.id_cat_monto.
+    // Acepta id_cat_monto y también id_categoria como alias viejo del frontend.
+    $id_cat_monto      = null;
+    if (isset($data['id_cat_monto']) && $data['id_cat_monto'] !== '') {
+        $id_cat_monto = (int)$data['id_cat_monto'];
+    } elseif (isset($data['id_categoria']) && $data['id_categoria'] !== '') {
+        $id_cat_monto = (int)$data['id_categoria'];
+    }
 
     $observaciones     = isset($data['observaciones']) ? (string)$data['observaciones'] : null;
     if ($observaciones !== null) {
@@ -80,17 +90,8 @@ try {
     if ($telefono && (!preg_match('/^[0-9+\-\s]+$/', $telefono) || strlen($telefono) > 20)) {
         $errors['telefono'] = 'Teléfono inválido (números, espacios y guiones, máx 20).';
     }
-    if (!$id_anio || !is_int($id_anio)) {
-        $errors['id_año'] = 'Año obligatorio.';
-    }
-    if (!$id_division || !is_int($id_division)) {
-        $errors['id_division'] = 'División obligatoria.';
-    }
-    if (!$id_categoria || !is_int($id_categoria)) {
-        $errors['id_categoria'] = 'Categoría obligatoria.';
-    }
     if (!$id_cat_monto || !is_int($id_cat_monto)) {
-        $errors['id_cat_monto'] = 'Categoría (monto) obligatoria.';
+        $errors['id_cat_monto'] = 'Categoría obligatoria.';
     }
     if ($id_tipo_documento !== null && !is_int($id_tipo_documento)) {
         $errors['id_tipo_documento'] = 'Tipo de documento inválido.';
@@ -100,7 +101,15 @@ try {
     }
 
     if (!empty($errors)) {
-        echo json_encode(['exito' => false, 'errores' => $errors], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['exito' => false, 'errores' => $errors, 'mensaje' => 'Revisá los campos obligatorios.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // Verificar que la categoría exista en la única tabla de categorías.
+    $stCat = $pdo->prepare('SELECT 1 FROM categoria_monto WHERE id_cat_monto = ? LIMIT 1');
+    $stCat->execute([$id_cat_monto]);
+    if (!$stCat->fetchColumn()) {
+        echo json_encode(['exito' => false, 'mensaje' => 'La categoría seleccionada no existe. Actualizá la página y volvé a intentar.'], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -114,11 +123,11 @@ try {
     $sql = "INSERT INTO `alumnos`
             (`apellido`, `nombre`, `id_tipo_documento`, `num_documento`, `id_sexo`,
              `domicilio`, `localidad`, `telefono`, `id_año`, `id_division`,
-             `id_categoria`, `id_cat_monto`, `observaciones`, `ingreso`)
+             `id_cat_monto`, `observaciones`, `ingreso`)
             VALUES
             (:apellido, :nombre, :id_tipo_documento, :num_documento, :id_sexo,
              :domicilio, :localidad, :telefono, :id_anio, :id_division,
-             :id_categoria, :id_cat_monto, :observaciones, CURDATE())";
+             :id_cat_monto, :observaciones, CURDATE())";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
@@ -132,12 +141,11 @@ try {
         ':telefono'          => $telefono,
         ':id_anio'           => $id_anio,
         ':id_division'       => $id_division,
-        ':id_categoria'      => $id_categoria,
         ':id_cat_monto'      => $id_cat_monto,
         ':observaciones'     => $observaciones
     ]);
 
-    echo json_encode(['exito' => true, 'mensaje' => '✅ Alumno registrado correctamente.'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['exito' => true, 'mensaje' => '✅ Socio registrado correctamente.'], JSON_UNESCAPED_UNICODE);
 
 } catch (PDOException $e) {
     if ($e->getCode() === '23000' && strpos($e->getMessage(), '1062') !== false) {
@@ -148,8 +156,8 @@ try {
         exit;
     }
     http_response_code(500);
-    echo json_encode(['exito' => false, 'mensaje' => '❌ Error: ' . $e->getMessage()]);
+    echo json_encode(['exito' => false, 'mensaje' => '❌ Error: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['exito' => false, 'mensaje' => '❌ Error: ' . $e->getMessage()]);
+    echo json_encode(['exito' => false, 'mensaje' => '❌ Error: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
 }

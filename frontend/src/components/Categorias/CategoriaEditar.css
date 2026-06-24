@@ -675,3 +675,10 @@
 .cat_edi_modal {
   animation: catFadeIn 280ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+/* Ajuste edición categoría: ya no se editan descuentos por categoría */
+.cat_edi_grid_single{
+  grid-template-columns: 1fr;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+}

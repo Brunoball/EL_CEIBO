@@ -12,10 +12,7 @@ const AgregarAlumno = () => {
   const navigate = useNavigate();
 
   const [listas, setListas] = useState({
-    anios: [],
-    divisiones: [],
-    categorias: [],          // tabla categoria (id_categoria)
-    categoriasMonto: [],     // tabla categoria_monto (id_cat_monto)
+    categorias: [],          // única categoría del club: categoria_monto
     tipos_documentos: [],
     sexos: [],
     loaded: false
@@ -30,10 +27,7 @@ const AgregarAlumno = () => {
     domicilio: '',
     localidad: '',
     telefono: '',
-    id_año: '',
-    id_division: '',
-    id_categoria: '',
-    id_cat_monto: '',         // ⬅️ NUEVO
+    id_cat_monto: '',
     observaciones: ''
   });
 
@@ -50,7 +44,7 @@ const AgregarAlumno = () => {
   // ⚠️ Solo consideramos "campos de usuario" para detectar cambios (ignoramos id_tipo_documento auto-preseleccionado)
   const USER_DIRTY_KEYS = [
     'apellido', 'nombre', 'num_documento', 'id_sexo', 'domicilio', 'localidad', 'telefono',
-    'id_año', 'id_division', 'id_categoria', 'id_cat_monto', 'observaciones'
+    'id_cat_monto', 'observaciones'
   ];
   const isDirty = useMemo(() => {
     return USER_DIRTY_KEYS.some(k => (formData[k] ?? '').toString().trim() !== '');
@@ -78,10 +72,7 @@ const AgregarAlumno = () => {
 
         if (json.exito) {
           const {
-            anios,
-            divisiones,
             categorias,
-            categorias_monto,   // si el backend lo expone con este nombre
             tipos_documentos,
             sexos
           } = json.listas || {};
@@ -89,14 +80,7 @@ const AgregarAlumno = () => {
           const td = Array.isArray(tipos_documentos) ? tipos_documentos : [];
 
           setListas({
-            anios: Array.isArray(anios) ? anios : [],
-            divisiones: Array.isArray(divisiones) ? divisiones : [],
             categorias: Array.isArray(categorias) ? categorias : [],
-            categoriasMonto: Array.isArray(categorias_monto)
-              ? categorias_monto
-              : (Array.isArray(json.listas?.categorias) && json.listas?.categorias[0]?.monto_mensual !== undefined)
-                  ? json.listas.categorias // compat si ya devolvés categoria_monto en "categorias"
-                  : [],
             tipos_documentos: td,
             sexos: Array.isArray(sexos) ? sexos : [],
             loaded: true
@@ -148,11 +132,8 @@ const AgregarAlumno = () => {
         break;
       case 'id_tipo_documento':
       case 'id_sexo':
-      case 'id_año':
-      case 'id_division':
-      case 'id_categoria':
       case 'id_cat_monto':
-        if (['id_tipo_documento','id_sexo','id_año','id_division','id_categoria','id_cat_monto'].includes(name)) {
+        if (['id_tipo_documento','id_sexo','id_cat_monto'].includes(name)) {
           if (!value) return 'obligatorio';
         }
         if (value !== '' && isNaN(Number(value))) return 'valor inválido';
@@ -277,10 +258,7 @@ const AgregarAlumno = () => {
       domicilio: 'Domicilio',
       localidad: 'Localidad',
       telefono: 'Teléfono',
-      id_año: 'Año',
-      id_division: 'División',
-      id_categoria: 'Categoría',
-      id_cat_monto: 'Categoría (monto)',
+      id_cat_monto: 'Categoría',
       observaciones: 'Observaciones'
     };
 
@@ -288,7 +266,7 @@ const AgregarAlumno = () => {
     const obligatorios = [
       'apellido', 'nombre', 'id_tipo_documento', 'num_documento', 'id_sexo',
       'domicilio',
-      'id_año', 'id_division', 'id_categoria', 'id_cat_monto'
+      'id_cat_monto'
     ];
 
     const faltantes = [];
@@ -322,7 +300,7 @@ const AgregarAlumno = () => {
       const data = await response.json();
 
       if (data.exito) {
-        showToast('Alumno agregado correctamente', 'exito');
+        showToast('Socio agregado correctamente', 'exito');
         setTimeout(() => navigate('/alumnos'), 1800);
       } else {
         showToast(data.mensaje || 'Revisá los datos e intentá nuevamente.', 'error');
@@ -346,7 +324,7 @@ const AgregarAlumno = () => {
           <div className="step-label">
             {step === 1 && 'Identificación'}
             {step === 2 && 'Contacto y Domicilio'}
-            {step === 3 && 'Datos Académicos'}
+            {step === 3 && 'Datos de cuota'}
           </div>
         </div>
       ))}
@@ -386,8 +364,8 @@ const AgregarAlumno = () => {
           <div className="add-icon-title">
             <FontAwesomeIcon icon={faUserPlus} className="add-icon" />
             <div>
-              <h1>Agregar Nuevo Alumno</h1>
-              <p>Completá los datos del alumno</p>
+              <h1>Agregar Nuevo Socio</h1>
+              <p>Completá los datos del socio</p>
             </div>
           </div>
 
@@ -586,69 +564,12 @@ const AgregarAlumno = () => {
           {/* PASO 3 */}
           {currentStep === 3 && (
             <div className="add-alumno-section">
-              <h3 className="add-alumno-section-title">Datos Académicos</h3>
+              <h3 className="add-alumno-section-title">Datos de cuota</h3>
               <div className="add-alumno-section-content">
 
                 <div className="add-group">
                   <div className="add-input-wrapper always-active" style={{ flex: 1, minWidth: 0 }}>
-                    <label className="add-label">Año *</label>
-                    <select
-                      name="id_año"
-                      value={formData.id_año}
-                      onChange={handleChange}
-                      onFocus={() => handleFocus('id_año')}
-                      onBlur={handleBlur}
-                      className="add-input"
-                      disabled={loading || !listas.loaded}
-                    >
-                      <option value="">Seleccionar año</option>
-                      {listas.anios.map(a => (
-                        <option key={a.id} value={a.id}>{a.nombre}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="add-input-wrapper always-active" style={{ flex: 1, minWidth: 0 }}>
-                    <label className="add-label">División *</label>
-                    <select
-                      name="id_division"
-                      value={formData.id_division}
-                      onChange={handleChange}
-                      onFocus={() => handleFocus('id_division')}
-                      onBlur={handleBlur}
-                      className="add-input"
-                      disabled={loading || !listas.loaded}
-                    >
-                      <option value="">Seleccionar división</option>
-                      {listas.divisiones.map(d => (
-                        <option key={d.id} value={d.id}>{d.nombre}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="add-input-wrapper always-active" style={{ flex: 1, minWidth: 0 }}>
                     <label className="add-label">Categoría *</label>
-                    <select
-                      name="id_categoria"
-                      value={formData.id_categoria}
-                      onChange={handleChange}
-                      onFocus={() => handleFocus('id_categoria')}
-                      onBlur={handleBlur}
-                      className="add-input"
-                      disabled={loading || !listas.loaded}
-                    >
-                      <option value="">Seleccionar categoría</option>
-                      {listas.categorias.map(c => (
-                        <option key={c.id} value={c.id}>{c.nombre}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* NUEVA FILA: CATEGORÍA MONTO */}
-                <div className="add-group">
-                  <div className="add-input-wrapper always-active" style={{ flex: 1, minWidth: 0 }}>
-                    <label className="add-label">Categoría (monto) *</label>
                     <select
                       name="id_cat_monto"
                       value={formData.id_cat_monto}
@@ -658,8 +579,8 @@ const AgregarAlumno = () => {
                       className="add-input"
                       disabled={loading || !listas.loaded}
                     >
-                      <option value="">Seleccionar categoría de monto</option>
-                      {listas.categoriasMonto.map(c => (
+                      <option value="">Seleccionar categoría</option>
+                      {listas.categorias.map(c => (
                         <option key={c.id} value={c.id}>
                           {c.nombre}{(c.monto_mensual!=null) ? ` — $${Number(c.monto_mensual).toLocaleString('es-AR')}/mes` : ''}
                         </option>
@@ -708,7 +629,7 @@ const AgregarAlumno = () => {
                 data-mobile-label="Guardar"
               >
                 <FontAwesomeIcon icon={faSave} className="add-icon-button" />
-                <span className="add-button-text">{loading ? 'Guardando...' : 'Guardar Alumno'}</span>
+                <span className="add-button-text">{loading ? 'Guardando...' : 'Guardar Socio'}</span>
               </button>
             )}
           </div>

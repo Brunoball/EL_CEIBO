@@ -70,23 +70,21 @@ const crearItemDesdeCampania = (campania) => ({
 
 const limpiarDni = (value) => String(value || "").replace(/\D+/g, "");
 
-const nombreAlumno = (alumno) => {
-  const apellido = String(alumno?.apellido || "").trim();
-  const nombre = String(alumno?.nombre || "").trim();
+const nombreSocio = (socio) => {
+  const apellido = String(socio?.apellido || "").trim();
+  const nombre = String(socio?.nombre || "").trim();
   return `${apellido} ${nombre}`.trim();
 };
 
-const cursoAlumno = (alumno) => {
-  const anio = String(alumno?.nombre_año || "").trim();
-  const division = String(alumno?.nombre_division || "").trim();
-  return [anio, division].filter(Boolean).join(" ");
+const referenciaSocio = (socio) => {
+  return String(socio?.categoria_nombre || socio?.catm_nombre || "").trim();
 };
 
-const opcionAlumno = (alumno) => {
-  const dni = limpiarDni(alumno?.dni || alumno?.num_documento);
-  const curso = cursoAlumno(alumno);
-  const activo = Number(alumno?.activo) === 0 ? " - BAJA" : "";
-  return `${dni} - ${nombreAlumno(alumno)}${curso ? ` (${curso})` : ""}${activo}`.trim();
+const opcionSocio = (socio) => {
+  const dni = limpiarDni(socio?.dni || socio?.num_documento);
+  const referencia = referenciaSocio(socio);
+  const activo = Number(socio?.activo) === 0 ? " - BAJA" : "";
+  return `${dni} - ${nombreSocio(socio)}${referencia ? ` (${referencia})` : ""}${activo}`.trim();
 };
 
 const opcionPersonaVenta = (persona) => {
@@ -164,7 +162,7 @@ export default function ModalOrden({
   campanias = [],
   productos = [],
   mediosPago = [],
-  alumnosCatalogo = [],
+  sociosCatalogo = [],
   personasCatalogo = [],
   personasCatalogoLoading = false,
   catalogosLoading = false,
@@ -174,16 +172,16 @@ export default function ModalOrden({
   onOpenNuevaPersona,
 }) {
   const setField = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
-  const [alumnoBusqueda, setAlumnoBusqueda] = useState("");
+  const [socioBusqueda, setSocioBusqueda] = useState("");
   const [personaBusqueda, setPersonaBusqueda] = useState("");
   const [selectorActivo, setSelectorActivo] = useState("");
   const [precioActivo, setPrecioActivo] = useState(null);
-  const alumnoComboRef = useRef(null);
+  const socioComboRef = useRef(null);
   const personaComboRef = useRef(null);
 
   useEffect(() => {
     if (!abierto) {
-      setAlumnoBusqueda("");
+      setSocioBusqueda("");
       setPersonaBusqueda("");
       setSelectorActivo("");
       setPrecioActivo(null);
@@ -197,10 +195,10 @@ export default function ModalOrden({
 
     const cerrarSiHaceClickAfuera = (event) => {
       const target = event.target;
-      const clickEnAlumnos = alumnoComboRef.current?.contains(target);
+      const clickEnSocios = socioComboRef.current?.contains(target);
       const clickEnPersonas = personaComboRef.current?.contains(target);
 
-      if (!clickEnAlumnos && !clickEnPersonas) {
+      if (!clickEnSocios && !clickEnPersonas) {
         setSelectorActivo("");
       }
     };
@@ -222,10 +220,10 @@ export default function ModalOrden({
     event.currentTarget.blur();
   };
 
-  const aplicarAlumno = (alumno) => {
-    const dni = limpiarDni(alumno?.dni || alumno?.num_documento);
-    const nombre = nombreAlumno(alumno);
-    const curso = cursoAlumno(alumno);
+  const aplicarSocio = (socio) => {
+    const dni = limpiarDni(socio?.dni || socio?.num_documento);
+    const nombre = nombreSocio(socio);
+    const referencia = referenciaSocio(socio);
 
     if (!dni || !nombre) return;
 
@@ -235,7 +233,7 @@ export default function ModalOrden({
       persona_dni: dni,
       dni,
       persona_nombre: nombre,
-      persona_detalle: curso ? `Alumno - ${curso}` : "Alumno registrado",
+      persona_detalle: referencia ? `Socio - ${referencia}` : "Socio registrado",
     }));
     setPersonaBusqueda("");
   };
@@ -252,14 +250,14 @@ export default function ModalOrden({
       persona_dni: dni,
       dni,
       persona_nombre: nombre,
-      persona_detalle: persona?.observacion || (persona?.id_alumno ? "Persona de ventas - alumno vinculado" : "Persona de ventas"),
+      persona_detalle: persona?.observacion || (persona?.id_alumno ? "Persona de ventas - socio vinculado" : "Persona de ventas"),
     }));
-    setAlumnoBusqueda("");
+    setSocioBusqueda("");
   };
 
-  const seleccionarAlumnoCatalogo = (alumno) => {
-    setAlumnoBusqueda(opcionAlumno(alumno));
-    aplicarAlumno(alumno);
+  const seleccionarSocioCatalogo = (socio) => {
+    setSocioBusqueda(opcionSocio(socio));
+    aplicarSocio(socio);
     setSelectorActivo("");
   };
 
@@ -296,9 +294,9 @@ export default function ModalOrden({
     setPersonaBusqueda(`${limpiarDni(form.persona_dni)} - ${String(form.persona_nombre || "").trim()}`.trim());
   }, [abierto, form?.id_venta_persona, form?.persona_dni, form?.persona_nombre]);
 
-  const alumnosFiltrados = useMemo(
-    () => filtrarOpcionesCatalogo(alumnosCatalogo, opcionAlumno, alumnoBusqueda),
-    [alumnosCatalogo, alumnoBusqueda]
+  const sociosFiltrados = useMemo(
+    () => filtrarOpcionesCatalogo(sociosCatalogo, opcionSocio, socioBusqueda),
+    [sociosCatalogo, socioBusqueda]
   );
 
   const personasFiltradas = useMemo(
@@ -413,7 +411,7 @@ export default function ModalOrden({
       titulo={titulo}
       subtitulo={esEdicion
         ? "Actualizá los datos de la venta registrada sin perder sus conceptos asociados."
-        : "Registrá una venta cobrada manualmente y vinculala con una persona o alumno."}
+        : "Registrá una venta cobrada manualmente y vinculala con una persona o socio."}
       onClose={saving ? undefined : onClose}
       className="ventas-modal--orden"
     >
@@ -601,11 +599,11 @@ export default function ModalOrden({
             </div>
           </section>
 
-          <section className="ventas-orden-card ventas-orden-card--soft" aria-label="Comprador o alumno">
+          <section className="ventas-orden-card ventas-orden-card--soft" aria-label="Comprador o socio">
             <div className="ventas-orden-card__head ventas-orden-card__head--plain">
               <div>
-                <h3>Comprador o alumno</h3>
-                <p>{personasCatalogoLoading ? "El modal ya está listo. Estamos cargando alumnos y personas para el buscador..." : "Buscá una persona existente para completar sus datos o ingresalos manualmente."}</p>
+                <h3>Comprador o socio</h3>
+                <p>{personasCatalogoLoading ? "El modal ya está listo. Estamos cargando socios y personas para el buscador..." : "Buscá una persona existente para completar sus datos o ingresalos manualmente."}</p>
               </div>
             </div>
 
@@ -613,34 +611,34 @@ export default function ModalOrden({
 
 
               <div className="ventas-form-row ventas-persona-search-grid">
-                <label className="ventas-orden-field ventas-search-combo ventas-floating-field" ref={alumnoComboRef}>
-                  <span className="ventas-floating-label">Alumno por DNI o nombre</span>
+                <label className="ventas-orden-field ventas-search-combo ventas-floating-field" ref={socioComboRef}>
+                  <span className="ventas-floating-label">Socio por DNI o nombre</span>
                   <input
-                    value={alumnoBusqueda}
+                    value={socioBusqueda}
                     onChange={(e) => {
-                      setAlumnoBusqueda(e.target.value);
-                      setSelectorActivo("alumnos");
+                      setSocioBusqueda(e.target.value);
+                      setSelectorActivo("socios");
                     }}
-                    onFocus={() => setSelectorActivo("alumnos")}
+                    onFocus={() => setSelectorActivo("socios")}
                     onKeyDown={cerrarSelectorConTeclado}
-                    placeholder={personasCatalogoLoading ? "Cargando alumnos..." : "Escribí DNI, apellido o nombre"}
+                    placeholder={personasCatalogoLoading ? "Cargando socios..." : "Escribí DNI, apellido o nombre"}
                     disabled={personasCatalogoLoading}
                     autoComplete="off"
                   />
-                  {selectorActivo === "alumnos" && !personasCatalogoLoading && (
+                  {selectorActivo === "socios" && !personasCatalogoLoading && (
                     <div className="ventas-search-dropdown" role="listbox" onMouseDown={(e) => e.preventDefault()}>
-                      {alumnosFiltrados.length > 0 ? alumnosFiltrados.map((alumno) => (
+                      {sociosFiltrados.length > 0 ? sociosFiltrados.map((socio) => (
                         <button
                           type="button"
-                          key={`alumno-${alumno.id_alumno}`}
+                          key={`socio-${socio.id_alumno || socio.id || socio.num_documento}`}
                           onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => seleccionarAlumnoCatalogo(alumno)}
+                          onClick={() => seleccionarSocioCatalogo(socio)}
                         >
-                          <strong>{nombreAlumno(alumno) || "Alumno sin nombre"}</strong>
-                          <span>{[limpiarDni(alumno?.dni || alumno?.num_documento) && `DNI ${limpiarDni(alumno?.dni || alumno?.num_documento)}`, cursoAlumno(alumno)].filter(Boolean).join(" · ") || "Sin datos adicionales"}</span>
+                          <strong>{nombreSocio(socio) || "Socio sin nombre"}</strong>
+                          <span>{[limpiarDni(socio?.dni || socio?.num_documento) && `DNI ${limpiarDni(socio?.dni || socio?.num_documento)}`, referenciaSocio(socio)].filter(Boolean).join(" · ") || "Sin datos adicionales"}</span>
                         </button>
                       )) : (
-                        <div className="ventas-search-empty">No hay alumnos que coincidan.</div>
+                        <div className="ventas-search-empty">No hay socios que coincidan.</div>
                       )}
                     </div>
                   )}
@@ -693,7 +691,7 @@ export default function ModalOrden({
 
             <div className="ventas-orden-persona-grid">
               <label className="ventas-orden-field ventas-floating-field">
-                <span className="ventas-floating-label">DNI de la persona/alumno</span>
+                <span className="ventas-floating-label">DNI de la persona/socio</span>
                 <input
                   value={form.persona_dni || form.dni || ""}
                   onChange={(e) => {
@@ -712,7 +710,7 @@ export default function ModalOrden({
                 <input
                   value={form.persona_detalle || ""}
                   onChange={(e) => setField("persona_detalle", e.target.value)}
-                  placeholder="Curso, alumno u otra referencia"
+                  placeholder="Referencia, socio u otra referencia"
                   maxLength={160}
                 />
               </label>

@@ -3,7 +3,7 @@
  * /api.php?action=contable_resumen&year=YYYY
  *
  * Criterio único y consistente con Ingresos:
- * ingresos del mes = pagos de alumnos + ingresos reales + ventas faltantes de respaldo.
+ * ingresos del mes = pagos de socios + ingresos reales + ventas faltantes de respaldo.
  *
  * Importante:
  * - NO se borran ni se ocultan registros de ingresos por parecer ventas.
@@ -125,7 +125,7 @@ try {
     $allYears = array_values(array_unique(array_filter($allYears)));
     rsort($allYears);
 
-    /* 1) PAGOS DE ALUMNOS */
+    /* 1) PAGOS DE SOCIOS */
     $ingresosPagosMes = [];
     if ($tableExists($pdo, 'pagos')) {
         try {
@@ -141,7 +141,7 @@ try {
             $st->execute([':y' => $year]);
             $ingresosPagosMes = $sumPorMes($st);
         } catch (Throwable $e) {
-            $warnings[] = 'No se pudieron sumar pagos de alumnos: ' . $e->getMessage();
+            $warnings[] = 'No se pudieron sumar pagos de socios: ' . $e->getMessage();
         }
     }
 

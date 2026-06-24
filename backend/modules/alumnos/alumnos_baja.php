@@ -70,6 +70,6 @@ try {
     http_response_code(500);
     echo json_encode([
         'exito'   => false,
-        'mensaje' => 'Error al obtener alumnos dados de baja: ' . $e->getMessage()
+        'mensaje' => 'Error al obtener socios dados de baja: ' . $e->getMessage()
     ], JSON_UNESCAPED_UNICODE);
 }

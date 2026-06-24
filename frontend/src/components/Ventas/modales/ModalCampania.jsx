@@ -89,7 +89,7 @@ export default function ModalCampania({ abierto, form, setForm, productos = [], 
                 <input
                   value={form.nombre}
                   onChange={(e) => setField("nombre", e.target.value)}
-                  placeholder="Ej: Venta de talitas / Entradas baile escolar"
+                  placeholder="Ej: Venta de talitas / Entradas evento del club"
                   maxLength={150}
                   required
                 />
@@ -101,7 +101,7 @@ export default function ModalCampania({ abierto, form, setForm, productos = [], 
                   value={form.pregunta_persona || ""}
                   rows={2}
                   onChange={(e) => setField("pregunta_persona", e.target.value)}
-                  placeholder="Ingresá el DNI de la persona o alumno que va a realizar la compra/pago."
+                  placeholder="Ingresá el DNI de la persona o socio que va a realizar la compra/pago."
                   required
                 />
               </label>

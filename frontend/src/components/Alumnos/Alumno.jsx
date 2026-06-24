@@ -1,5 +1,5 @@
 // ✅ REEMPLAZAR COMPLETO
-// src/components/Alumnos/Alumnos.jsx
+// src/components/Alumnos/Alumno.jsx
 
 import React, {
   useEffect,
@@ -113,7 +113,7 @@ function useIsMobile(breakpoint = 768) {
 }
 
 /* ================================
-   Componente Alumnos
+   Componente Socios
 ================================ */
 const Alumnos = () => {
   const [alumnos, setAlumnos] = useState([]);
@@ -211,8 +211,6 @@ const Alumnos = () => {
 
   const hayFiltros = !!(
     (busquedaDefer && busquedaDefer.trim() !== '') ||
-    (divisionSeleccionada && divisionSeleccionada !== '') ||
-    (anioSeleccionado !== null) ||
     (categoriaSeleccionada && categoriaSeleccionada !== '') ||
     (cobradorSeleccionado && cobradorSeleccionado !== '')
   );
@@ -253,15 +251,6 @@ const Alumnos = () => {
           a._nyap.includes(q) ||
           a._dni.includes(q)
       );
-    }
-
-    if (divisionSeleccionada && divisionSeleccionada !== '') {
-      const divNorm = normalizar(divisionSeleccionada);
-      resultados = resultados.filter((a) => normalizar(a?.division_nombre ?? '') === divNorm);
-    }
-
-    if (anioSeleccionado !== null) {
-      resultados = resultados.filter((a) => a._anioNum === anioSeleccionado);
     }
 
     if (categoriaSeleccionada && categoriaSeleccionada !== '') {
@@ -423,7 +412,7 @@ const Alumnos = () => {
           setAlumnos(procesados);
           setAlumnosDB(procesados);
         } else {
-          mostrarToast(`Error al obtener alumnos: ${data.mensaje}`, 'error');
+          mostrarToast(`Error al obtener socios: ${data.mensaje}`, 'error');
         }
 
         try {
@@ -453,7 +442,7 @@ const Alumnos = () => {
         }
 
       } catch (error) {
-        mostrarToast('Error de red al obtener alumnos', 'error');
+        mostrarToast('Error de red al obtener socios', 'error');
       } finally {
         setCargando(false);
       }
@@ -530,7 +519,7 @@ const Alumnos = () => {
             alumnoSeleccionadoRef.current = null;
             setAlumnoSeleccionado(null);
           }
-          mostrarToast('Alumno eliminado correctamente');
+          mostrarToast('Socio eliminado correctamente');
         } else {
           mostrarToast(`Error al eliminar: ${data.mensaje}`, 'error');
         }
@@ -566,7 +555,7 @@ const Alumnos = () => {
             alumnoSeleccionadoRef.current = null;
             setAlumnoSeleccionado(null);
           }
-          mostrarToast('Alumno dado de baja correctamente');
+          mostrarToast('Socio dado de baja correctamente');
         } else {
           mostrarToast(`Error: ${data.mensaje}`, 'error');
         }
@@ -589,7 +578,7 @@ const Alumnos = () => {
     }
 
     const filas = alumnosFiltrados.map((a) => ({
-      'ID Alumno': a?.id_alumno ?? '',
+      'ID Socio': a?.id_alumno ?? '',
       'Apellido': a?.apellido ?? '',
       'Nombre': a?.nombre ?? '',
       'Tipo de documento': a?.tipo_documento_nombre ?? '',
@@ -600,26 +589,24 @@ const Alumnos = () => {
       'Fecha de ingreso': formatearFechaISO(a?.ingreso ?? ''),
       'Domicilio': construirDomicilio(a?.domicilio),
       'Localidad': a?.localidad ?? '',
-      'Año': a?.anio_nombre ?? '',
-      'División': a?.division_nombre ?? '',
       'Categoría': a?.categoria_nombre ?? '',
       'Cobrador': Number(a?.es_cobrador ?? 0) === 1 ? 'SI' : 'NO',
     }));
 
     const headers = [
-      'ID Alumno','Apellido','Nombre','Tipo de documento','Sigla','Nº Documento',
-      'Sexo','Teléfono','Fecha de ingreso','Domicilio','Localidad','Año','División','Categoría','Cobrador'
+      'ID Socio','Apellido','Nombre','Tipo de documento','Sigla','Nº Documento',
+      'Sexo','Teléfono','Fecha de ingreso','Domicilio','Localidad','Categoría','Cobrador'
     ];
 
     const ws = XLSX.utils.json_to_sheet(filas, { header: headers });
 
     ws['!cols'] = [
       { wch: 10 },{ wch: 18 },{ wch: 18 },{ wch: 22 },{ wch: 8  },{ wch: 14 },
-      { wch: 10 },{ wch: 14 },{ wch: 14 },{ wch: 28 },{ wch: 20 },{ wch: 10 },{ wch: 10 },{ wch: 16 },{ wch: 10 },
+      { wch: 10 },{ wch: 14 },{ wch: 14 },{ wch: 28 },{ wch: 20 },{ wch: 16 },{ wch: 10 },
     ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Alumnos');
+    XLSX.utils.book_append_sheet(wb, ws, 'Socios');
 
     const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
@@ -631,7 +618,7 @@ const Alumnos = () => {
 
     const sufijo = filtroActivo === 'todos' ? 'Todos' : 'Filtrados';
     const fechaStr = `${yyyy}-${mm}-${dd}`;
-    saveAs(blob, `Alumnos_${sufijo}_${fechaStr}(${filas.length}).xlsx`);
+    saveAs(blob, `Socios_${sufijo}_${fechaStr}(${filas.length}).xlsx`);
   }, [puedeExportar, alumnosFiltrados, filtroActivo, mostrarToast, construirDomicilio]);
 
   const handleMostrarTodos = useCallback(() => {
@@ -894,12 +881,6 @@ const Alumnos = () => {
         <div className="alu-column alu-column-localidad" title={alumno.localidad}>
           {alumno.localidad}
         </div>
-        <div className="alu-column alu-column-anio" title={alumno.anio_nombre}>
-          {alumno.anio_nombre}
-        </div>
-        <div className="alu-column alu-column-division" title={alumno.division_nombre}>
-          {alumno.division_nombre}
-        </div>
 
         <div className="alu-column alu-icons-column">
           {isSelected && (
@@ -981,7 +962,7 @@ const Alumnos = () => {
     );
   });
 
-  const hayChips = !!(busqueda || divisionSeleccionada || anioSeleccionado !== null || categoriaSeleccionada || cobradorSeleccionado);
+  const hayChips = !!(busqueda || categoriaSeleccionada || cobradorSeleccionado);
 
   return (
     <div className="alu-alumno-container">
@@ -996,7 +977,7 @@ const Alumnos = () => {
         )}
 
         <div className="alu-front-row-alu">
-          <span className="alu-alumno-title">Gestión de Alumnos</span>
+          <span className="alu-alumno-title">Gestión de Socios</span>
 
           <div className="alu-search-input-container">
             <input
@@ -1028,66 +1009,6 @@ const Alumnos = () => {
 
             {mostrarFiltros && (
               <div className="alu-filtros-menu" role="menu">
-
-                {/* AÑO */}
-                <div className="alu-filtros-group">
-                  <button
-                    type="button"
-                    className={`alu-filtros-group-header ${openSecciones.anio ? 'is-open' : ''}`}
-                    onClick={() => setOpenSecciones((s) => ({ ...s, anio: !s.anio }))}
-                    aria-expanded={openSecciones.anio}
-                  >
-                    <span className="alu-filtros-group-title">Filtrar por año</span>
-                    <FaChevronDown className="alu-accordion-caret" />
-                  </button>
-
-                  <div className={`alu-filtros-group-body ${openSecciones.anio ? 'is-open' : 'is-collapsed'}`}>
-                    <div className="alu-anio-filtros">
-                      {[1,2,3,4,5,6,7].map((n) => (
-                        <button
-                          key={`anio-${n}`}
-                          className={`alu-anio-filtro ${filtros.anioSeleccionado === n ? 'alu-active' : ''}`}
-                          onClick={() => handleFiltrarPorAnio(n)}
-                          title={`Filtrar por Año ${n}`}
-                        >
-                          {n}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* DIVISIÓN */}
-                <div className="alu-filtros-group">
-                  <button
-                    type="button"
-                    className={`alu-filtros-group-header ${openSecciones.division ? 'is-open' : ''}`}
-                    onClick={() => setOpenSecciones((s) => ({ ...s, division: !s.division }))}
-                    aria-expanded={openSecciones.division}
-                  >
-                    <span className="alu-filtros-group-title">Filtrar por división</span>
-                    <FaChevronDown className="alu-accordion-caret" />
-                  </button>
-
-                  <div className={`alu-filtros-group-body ${openSecciones.division ? 'is-open' : 'is-collapsed'}`}>
-                    <div className="alu-alfabeto-filtros">
-                      {divisionesDisponibles.length === 0 ? (
-                        <span className="alu-filtro-empty">No hay divisiones disponibles</span>
-                      ) : (
-                        divisionesDisponibles.map((div) => (
-                          <button
-                            key={`div-${div}`}
-                            className={`alu-letra-filtro ${filtros.divisionSeleccionada === div ? 'alu-active' : ''}`}
-                            onClick={() => handleFiltrarPorDivision(div)}
-                            title={`Filtrar por división ${div}`}
-                          >
-                            {div}
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
 
                 {/* CATEGORÍA */}
                 <div className="alu-filtros-group">
@@ -1138,7 +1059,7 @@ const Alumnos = () => {
                       <button
                         className={`Cobrador-btn alu-letra-filtro ${filtros.cobradorSeleccionado === '1' ? 'alu-active' : ''}`}
                         onClick={() => handleFiltrarCobrador(true)}
-                        title="Solo alumnos marcados como cobrador"
+                        title="Solo socios marcados como cobrador"
                       >
                         SOLO COBRADOR
                       </button>
@@ -1175,7 +1096,7 @@ const Alumnos = () => {
             <div className="alu-left-inline">
               <div className="alu-contador-container">
                 <span className="alu-alumnos-desktop">
-                  Cant alumnos: {(hayFiltros || filtroActivo === 'todos') ? alumnosFiltrados.length : 0}
+                  Cant socios: {(hayFiltros || filtroActivo === 'todos') ? alumnosFiltrados.length : 0}
                 </span>
                 <span className="alu-alumnos-mobile">
                   {(hayFiltros || filtroActivo === 'todos') ? alumnosFiltrados.length : 0}
@@ -1192,22 +1113,6 @@ const Alumnos = () => {
                         {busqueda.length > 3 ? `${busqueda.substring(0, 3)}...` : busqueda}
                       </span>
                       <button className="alu-chip-mini-close" onClick={quitarBusqueda} aria-label="Quitar filtro">×</button>
-                    </div>
-                  )}
-
-                  {divisionSeleccionada && (
-                    <div className="alu-chip-mini" title="Filtro activo">
-                      <span className="alu-chip-mini-text alu-alumnos-desktop">División: {divisionSeleccionada}</span>
-                      <span className="alu-chip-mini-text alu-alumnos-mobile">{divisionSeleccionada}</span>
-                      <button className="alu-chip-mini-close" onClick={quitarDivision} aria-label="Quitar filtro">×</button>
-                    </div>
-                  )}
-
-                  {anioSeleccionado != null && (
-                    <div className="alu-chip-mini" title="Filtro activo">
-                      <span className="alu-chip-mini-text alu-alumnos-desktop">Año: {anioSeleccionado}</span>
-                      <span className="alu-chip-mini-text alu-alumnos-mobile">{anioSeleccionado}</span>
-                      <button className="alu-chip-mini-close" onClick={quitarAnio} aria-label="Quitar filtro">×</button>
                     </div>
                   )}
 
@@ -1243,8 +1148,6 @@ const Alumnos = () => {
                 <div className="alu-column-header alu-header-dni">DNI</div>
                 <div className="alu-column-header alu-header-domicilio">Domicilio</div>
                 <div className="alu-column-header alu-header-localidad">Localidad</div>
-                <div className="alu-column-header alu-header-anio">Año</div>
-                <div className="alu-column-header alu-header-division">División</div>
                 <div className="alu-column-header alu-icons-column">Acciones</div>
               </div>
 
@@ -1252,9 +1155,9 @@ const Alumnos = () => {
                 {!hayFiltros && filtroActivo !== 'todos' ? (
                   <div className="alu-no-data-message">
                     <div className="alu-message-content">
-                      <p>Por favor aplicá búsqueda o filtros para ver los alumnos</p>
+                      <p>Por favor aplicá búsqueda o filtros para ver los socios</p>
                       <button className="alu-btn-show-all" onClick={handleMostrarTodos}>
-                        Mostrar todos los alumnos
+                        Mostrar todos los socios
                       </button>
                     </div>
                   </div>
@@ -1265,7 +1168,7 @@ const Alumnos = () => {
                 ) : alumnos.length === 0 ? (
                   <div className="alu-no-data-message">
                     <div className="alu-message-content">
-                      <p>No hay alumnos registrados</p>
+                      <p>No hay socios registrados</p>
                     </div>
                   </div>
                 ) : alumnosFiltrados.length === 0 ? (
@@ -1306,7 +1209,7 @@ const Alumnos = () => {
               {!hayFiltros && filtroActivo !== 'todos' ? (
                 <div className="alu-no-data-message alu-no-data-mobile">
                   <div className="alu-message-content">
-                    <p>Usá la búsqueda o aplicá filtros para ver resultados</p>
+                    <p>Usá la búsqueda o aplicá filtros para ver socios</p>
                     <button className="alu-btn-show-all" onClick={handleMostrarTodos}>
                       Mostrar todos
                     </button>
@@ -1315,13 +1218,13 @@ const Alumnos = () => {
               ) : mostrarLoader ? (
                 <div className="alu-no-data-message alu-no-data-mobile">
                   <div className="alu-message-content">
-                    <p>Cargando alumnos...</p>
+                    <p>Cargando socios...</p>
                   </div>
                 </div>
               ) : alumnos.length === 0 ? (
                 <div className="alu-no-data-message alu-no-data-mobile">
                   <div className="alu-message-content">
-                    <p>No hay alumnos registrados</p>
+                    <p>No hay socios registrados</p>
                   </div>
                 </div>
               ) : alumnosFiltrados.length === 0 ? (
@@ -1367,14 +1270,6 @@ const Alumnos = () => {
                         <div className="alu-card-row">
                           <span className="alu-card-label">Localidad</span>
                           <span className="alu-card-value">{alumno.localidad}</span>
-                        </div>
-                        <div className="alu-card-row">
-                          <span className="alu-card-label">Año</span>
-                          <span className="alu-card-value">{alumno.anio_nombre}</span>
-                        </div>
-                        <div className="alu-card-row">
-                          <span className="alu-card-label">División</span>
-                          <span className="alu-card-value">{alumno.division_nombre}</span>
                         </div>
                       </div>
 
@@ -1486,10 +1381,10 @@ const Alumnos = () => {
                 className="alu-alumno-button alu-hover-effect"
                 onClick={() => navigate('/alumnos/agregar')}
                 aria-label="Agregar"
-                title="Agregar alumno"
+                title="Agregar socio"
               >
                 <FaUserPlus className="alu-alumno-icon-button" />
-                <p>Agregar Alumno</p>
+                <p>Agregar Socio</p>
               </button>
             )}
 

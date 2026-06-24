@@ -4,7 +4,7 @@ export const emptyCampania = {
   activo: 1,
   visible_menu: 1,
   tipo_persona: "vendedor",
-  pregunta_persona: "Ingresá el DNI de la persona o alumno que va a realizar la compra/pago.",
+  pregunta_persona: "Ingresá el DNI de la persona o socio que va a realizar la compra/pago.",
   mensaje_inicio: "Indicá la cantidad que querés comprar.",
   mensaje_aprobado: "Pago aprobado. Te enviamos el comprobante en PDF.",
   fecha_inicio: "",
@@ -32,13 +32,13 @@ export const emptyProducto = {
 export const tiposPersona = [
   {
     value: "vendedor",
-    label: "Pedir DNI de la persona/alumno",
-    shortLabel: "DNI persona/alumno",
-    menuLabel: "DNI persona/alumno",
-    pregunta: "Ingresá el DNI de la persona o alumno que va a realizar la compra/pago.",
+    label: "Pedir DNI de la persona/socio",
+    shortLabel: "DNI persona/socio",
+    menuLabel: "DNI persona/socio",
+    pregunta: "Ingresá el DNI de la persona o socio que va a realizar la compra/pago.",
     mensajeInicio: "Indicá la cantidad que querés comprar.",
     ejemplo: "Todas las ventas: entradas, rifas, talitas, bonos o venta general.",
-    resumen: "El bot siempre pide DNI, busca en alumnos y personas de ventas, confirma el nombre y luego pide cantidad.",
+    resumen: "El bot siempre pide DNI, busca en socios y personas de ventas, confirma el nombre y luego pide cantidad.",
   },
 ];
 
@@ -129,7 +129,7 @@ export const emptyOrden = {
   dni: "",
   persona_nombre: "",
   persona_detalle: "",
-  curso_manual: "",
+  referencia_manual: "",
   comprador_telefono: "",
   estado: "aprobada",
   id_medio_pago: "",

@@ -320,13 +320,13 @@ export default function IngresosContable() {
 
   const [query, setQuery] = useState("");
 
-  const [filas, setFilas] = useState([]); // alumnos
+  const [filas, setFilas] = useState([]); // socios
   const [filasIngresos, setFilasIngresos] = useState([]); // ingresos manuales
   const [cargando, setCargando] = useState(false);
 
   const [sideOpen, setSideOpen] = useState(true);
   const [cascading, setCascading] = useState(false);
-  const [innerTab, setInnerTab] = useState("alumnos"); // "alumnos" | "manuales"
+  const [innerTab, setInnerTab] = useState("socios"); // "socios" | "manuales"
 
   const [catFiltro, setCatFiltro] = useState("");
 
@@ -390,11 +390,11 @@ export default function IngresosContable() {
     return data;
   }, []);
 
-  const esPagoAlumnoValido = useCallback((r) => {
+  const esPagoSocioValido = useCallback((r) => {
     if (!r || typeof r !== "object") return false;
 
-    // Defensa: si el backend viejo mezcla ingresos/ventas dentro del detalle de alumnos,
-    // no los dejamos entrar a la pestaña Alumnos.
+    // Defensa: si el backend viejo mezcla ingresos/ventas dentro del detalle de socios,
+    // no los dejamos entrar a la pestaña Socios.
     const tieneCamposIngreso =
       r.id_ingreso != null ||
       r.id_venta_orden != null ||
@@ -405,11 +405,11 @@ export default function IngresosContable() {
       r.importe != null;
     if (tieneCamposIngreso) return false;
 
-    const alumno = String(r.Alumno ?? "").trim();
+    const socio = String(r.Socio ?? r.Alumno ?? "").trim();
     const fecha = String(r.fecha_pago ?? "").trim();
     const monto = Number(r.Monto ?? 0);
 
-    return Boolean(alumno && fecha && Number.isFinite(monto) && monto > 0);
+    return Boolean(socio && fecha && Number.isFinite(monto) && monto > 0);
   }, []);
 
   /* ✅ Cargar meses especiales (FIJO, sin backend) */
@@ -423,7 +423,7 @@ export default function IngresosContable() {
     ]);
   }, []);
 
-  const loadPagosAlumnos = useCallback(async () => {
+  const loadPagosSocios = useCallback(async () => {
     setCargando(true);
     try {
       let url = `${BASE_URL}/api.php?action=contable_ingresos&detalle=1`;
@@ -444,7 +444,7 @@ export default function IngresosContable() {
       const todosLosDatos = [];
       Object.keys(detalleCompleto).forEach((key) => {
         const grupo = Array.isArray(detalleCompleto[key])
-          ? detalleCompleto[key].filter(esPagoAlumnoValido)
+          ? detalleCompleto[key].filter(esPagoSocioValido)
           : [];
 
         if (anio === "ALL") {
@@ -470,25 +470,25 @@ export default function IngresosContable() {
       });
 
       const rows = todosLosDatos.map((r, i) => ({
-        id: `${r?.fecha_pago || ""}|${r?.Alumno || ""}|${r?.Monto || 0}|${i}`,
+        id: `${r?.fecha_pago || ""}|${r?.Socio || r?.Alumno || ""}|${r?.Monto || 0}|${i}`,
         fecha: r?.fecha_pago ?? "",
-        alumno: r?.Alumno ?? "",
+        socio: r?.Socio ?? r?.Alumno ?? "",
         categoria: r?.Categoria ?? "-",
         monto: Number(r?.Monto ?? 0),
         mesPagado: r?.Mes_pagado || MESES[Number(r?.Mes_pagado_id || 0) - 1] || "-",
         mesPagadoId: Number(r?.Mes_pagado_id || r?.id_mes || 0),
         medio: r?.Medio || r?.medio || "—",
-        tipo: "alumno",
+        tipo: "socio",
       }));
 
       setFilas(rows);
     } catch (e) {
-      console.error("Error al cargar ingresos alumnos:", e);
+      console.error("Error al cargar ingresos socios:", e);
       setFilas([]);
     } finally {
       setCargando(false);
     }
-  }, [anio, mes, rango, fetchJSON, esPagoAlumnoValido]);
+  }, [anio, mes, rango, fetchJSON, esPagoSocioValido]);
 
   const loadIngresos = useCallback(async () => {
     setCargando(true);
@@ -584,8 +584,8 @@ export default function IngresosContable() {
   }, [anio, mes, rango, fetchJSON]);
 
   const loadAll = useCallback(async () => {
-    await Promise.all([loadPagosAlumnos(), loadIngresos()]);
-  }, [loadPagosAlumnos, loadIngresos]);
+    await Promise.all([loadPagosSocios(), loadIngresos()]);
+  }, [loadPagosSocios, loadIngresos]);
 
   useEffect(() => {
     const loadAnios = async () => {
@@ -618,7 +618,7 @@ export default function IngresosContable() {
   }, [innerTab, anio, mes]);
 
   useEffect(() => {
-    if (innerTab !== "alumnos") setMesEspecial("");
+    if (innerTab !== "socios") setMesEspecial("");
   }, [innerTab]);
 
   useEffect(() => {
@@ -630,12 +630,12 @@ export default function IngresosContable() {
   const filasFiltradasAlu = useMemo(() => {
     const q = query.trim().toLowerCase();
 
-    const soloAlumnos = filas.filter((f) => f?.tipo === "alumno" && !f?.origenContable && !f?.id_ingreso && !f?.idVentaOrden);
+    const soloSocios = filas.filter((f) => f?.tipo === "socio" && !f?.origenContable && !f?.id_ingreso && !f?.idVentaOrden);
 
     let base = !q
-      ? soloAlumnos
-      : soloAlumnos.filter((f) =>
-          (f.alumno || "").toLowerCase().includes(q) ||
+      ? soloSocios
+      : soloSocios.filter((f) =>
+          (f.socio || "").toLowerCase().includes(q) ||
           (f.categoria || "").toLowerCase().includes(q) ||
           (f.fecha || "").toLowerCase().includes(q) ||
           (f.mesPagado || "").toLowerCase().includes(q) ||
@@ -669,14 +669,14 @@ export default function IngresosContable() {
   }, [filasIngresos, query, catFiltro]);
 
   const resumen = useMemo(() => {
-    const base = innerTab === "alumnos" ? filasFiltradasAlu : filasFiltradasIng;
+    const base = innerTab === "socios" ? filasFiltradasAlu : filasFiltradasIng;
     const total = base.reduce((acc, f) => acc + Number((f.monto ?? f.importe) || 0), 0);
     return { total, cantidad: base.length };
   }, [filasFiltradasAlu, filasFiltradasIng, innerTab]);
 
   const categoriasMes = useMemo(() => {
-    const base = innerTab === "alumnos"
-      ? filas.filter((f) => f?.tipo === "alumno" && !f?.id_ingreso && !f?.idVentaOrden)
+    const base = innerTab === "socios"
+      ? filas.filter((f) => f?.tipo === "socio" && !f?.id_ingreso && !f?.idVentaOrden)
       : filasIngresos.filter((f) => f?.tipo === "ingreso");
     const map = new Map();
     base.forEach((f) => {
@@ -692,7 +692,7 @@ export default function IngresosContable() {
   const sideClass = ["ing-side", sideOpen ? "is-open" : "is-closed"].join(" ");
 
   const onExport = async () => {
-    const isAlu = innerTab === "alumnos";
+    const isAlu = innerTab === "socios";
     const base = isAlu ? filasFiltradasAlu : filasFiltradasIng;
     if (!base.length) {
       addToast("advertencia", "No hay datos para exportar.");
@@ -703,7 +703,7 @@ export default function IngresosContable() {
     if (isAlu) {
       rows = base.map((r) => ({
         Fecha: formatFechaDMY(r.fecha),
-        Alumno: r.alumno,
+        Socio: r.socio,
         Categoría: r.categoria,
         Monto: r.monto,
         "Mes pagado": r.mesPagado,
@@ -727,7 +727,7 @@ export default function IngresosContable() {
         : mes === "ALL"
         ? `Año_${anio}`
         : `${cap1(MESES[Number(mes)])}_${anio}`
-    }_${isAlu ? "Alumnos" : "Ingresos"}`;
+    }_${isAlu ? "Socios" : "Ingresos"}`;
 
     await exportToExcelLike({ workbookName: wbName, sheetName: "Datos", rows });
     addToast("exito", "Exportado exitosamente.");
@@ -842,7 +842,7 @@ export default function IngresosContable() {
               </div>
             </div>
 
-            {innerTab === "alumnos" && (
+            {innerTab === "socios" && (
               <div className="ing-fieldrow">
                 <div className={`ing-field ing-Especial fl ${mesEspecial ? "has-value" : ""}`}>
                   <select
@@ -888,7 +888,7 @@ export default function IngresosContable() {
 
             <div className="ing-sectiontitle">
               <FontAwesomeIcon icon={faChartPie} />
-              <span>{innerTab === "alumnos" ? "Categorías (alumnos)" : "Categorías (ingresos)"}</span>
+              <span>{innerTab === "socios" ? "Categorías (socios)" : "Categorías (ingresos)"}</span>
             </div>
 
             {categoriasMes.length === 0 ? (
@@ -936,11 +936,11 @@ export default function IngresosContable() {
                 <div className="seg-tabs-left">
                   <button
                     role="tab"
-                    aria-selected={innerTab === "alumnos"}
-                    className={`seg-tab ${innerTab === "alumnos" ? "active" : ""}`}
-                    onClick={() => setInnerTab("alumnos")}
+                    aria-selected={innerTab === "socios"}
+                    className={`seg-tab ${innerTab === "socios" ? "active" : ""}`}
+                    onClick={() => setInnerTab("socios")}
                   >
-                    Alumnos
+                    Socios
                   </button>
                   <button
                     role="tab"
@@ -976,12 +976,12 @@ export default function IngresosContable() {
                 </div>
               </div>
 
-              {innerTab === "alumnos" ? (
+              {innerTab === "socios" ? (
                 <div
-                  key="tabla-alumnos"
+                  key="tabla-socios"
                   className={`ing-tablewrap ${cargando ? "is-loading" : ""}`}
                   role="table"
-                  aria-label="Listado de ingresos (alumnos)"
+                  aria-label="Listado de ingresos (socios)"
                 >
                   {cargando && (
                     <div className="ing-tableloader" role="status" aria-live="polite">
@@ -992,7 +992,7 @@ export default function IngresosContable() {
 
                   <div className="ing-row h" role="row">
                     <div className="c-fecha">Fecha</div>
-                    <div className="c-alumno">Alumno</div>
+                    <div className="c-socio">Socio</div>
                     <div className="c-cat c-cat-aling">Categoría</div>
                     <div className="c-monto t-right">Monto</div>
                     <div className="c-medio">Medio</div>
@@ -1007,10 +1007,10 @@ export default function IngresosContable() {
                       style={{ "--i": idx }}
                     >
                       <div className="c-fecha">{formatFechaDMY(f.fecha)}</div>
-                      <div className="c-alumno">
-                        <div className="ing-alumno">
-                          <div className="ing-alumno__text">
-                            <div className="strong name-small">{f.alumno}</div>
+                      <div className="c-socio">
+                        <div className="ing-socio">
+                          <div className="ing-socio__text">
+                            <div className="strong name-small">{f.socio}</div>
                           </div>
                         </div>
                       </div>

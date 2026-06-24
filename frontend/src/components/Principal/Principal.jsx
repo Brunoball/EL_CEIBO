@@ -320,11 +320,11 @@ const Principal = () => {
       },
       {
         key: "alumnos",
-        label: "Alumnos",
+        label: "Socios",
         icon: faUsers,
         ruta: "/alumnos",
         children: [
-          { label: "Gestionar alumnos", ruta: "/alumnos" },
+          { label: "Gestionar socios", ruta: "/alumnos" },
           { label: "Familias", ruta: "/familias" },
           { label: "Dados de baja", ruta: "/alumnos/baja" },
         ],
@@ -337,7 +337,7 @@ const Principal = () => {
       },
       {
         key: "ventas",
-        label: "Ventas escolares",
+        label: "Ventas generales",
         icon: faStore,
         ruta: "/ventas",
       },
@@ -575,7 +575,7 @@ const Principal = () => {
             </div>
 
             <div className="pp-drawerBrand__txt">
-              <div className="pp-drawerBrand__t">Cooperadora</div>
+              <div className="pp-drawerBrand__t">Club Deportivo</div>
               <div className="pp-drawerBrand__s">Panel</div>
             </div>
           </div>
@@ -605,7 +605,7 @@ const Principal = () => {
           </div>
 
           <div className="pp-brand__text">
-            <div className="pp-brand__title">Cooperadora</div>
+            <div className="pp-brand__title">Club Deportivo</div>
             <div className="pp-brand__subtitle">IPET 50</div>
           </div>
         </div>

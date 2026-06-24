@@ -30,13 +30,6 @@ function route_cuotas(string $action): bool
         case 'obtener_monto_categoria':
             require __DIR__ . '/obtener_monto_categoria.php';
             return true;
-
-        case 'matricula':
-        case 'obtener_monto_matricula':
-        case 'actualizar_monto_matricula':
-            require __DIR__ . '/matricula.php';
-            return true;
-
         case 'obtener_info_familia':
             require __DIR__ . '/obtener_info_familia.php';
             return true;

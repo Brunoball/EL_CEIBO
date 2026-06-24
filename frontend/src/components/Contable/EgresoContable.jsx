@@ -144,8 +144,8 @@ function ConfirmModal({
   );
 }
 
-/* ===== Celda Alumno / Proveedor: botón Ver todo si el texto se corta ===== */
-function AlumnoProveedorCell({ valor, onShow }) {
+/* ===== Celda Socio / Proveedor: botón Ver todo si el texto se corta ===== */
+function SocioProveedorCell({ valor, onShow }) {
   const textRef = useRef(null);
   const [truncado, setTruncado] = useState(false);
   const texto = String(valor || "").trim() || "-";
@@ -206,8 +206,8 @@ function AlumnoProveedorCell({ valor, onShow }) {
           type="button"
           className="eg-btn-ver-ap"
           onClick={abrirDetalle}
-          title="Ver alumno / proveedor completo"
-          aria-label="Ver alumno o proveedor completo"
+          title="Ver socio / proveedor completo"
+          aria-label="Ver socio o proveedor completo"
         >
           <FontAwesomeIcon icon={faInfoCircle} />
 
@@ -218,7 +218,7 @@ function AlumnoProveedorCell({ valor, onShow }) {
 }
 
 /* ===== Modal con la misma estética del motivo en Socios Baja ===== */
-function AlumnoProveedorDetalleModal({ open, contenido, onClose }) {
+function SocioProveedorDetalleModal({ open, contenido, onClose }) {
   const cerrarBtnRef = useRef(null);
 
   useEffect(() => {
@@ -253,11 +253,11 @@ function AlumnoProveedorDetalleModal({ open, contenido, onClose }) {
         </div>
 
         <h3 id="eg-modal-ap-title" className="eg-modal-titulo-motivo">
-          Alumno / Proveedor
+          Socio / Proveedor
         </h3>
 
         <div className="eg-modal-texto-motivo">
-          {contenido || "No hay alumno / proveedor especificado"}
+          {contenido || "No hay socio / proveedor especificado"}
         </div>
 
         <div className="eg-modal-botones-motivo">
@@ -313,11 +313,14 @@ const normalizeEgreso = (r = {}) => ({
   descripcion: r.nombre_descripcion || "",
   medio_pago: r.medio_pago || "",
   medio_nombre: r.medio_pago || "",
-  alumno: r.alumno_origen_nombre || "",
-  proveedor: r.alumno_origen_nombre || r.nombre_proveedor || "",
-  alumno_documento: r.alumno_origen_documento || "",
+  socio: r.socio_origen_nombre || r.alumno_origen_nombre || "",
+  alumno: r.socio_origen_nombre || r.alumno_origen_nombre || "", // compatibilidad interna
+  proveedor: r.socio_origen_nombre || r.alumno_origen_nombre || r.nombre_proveedor || "",
+  socio_documento: r.socio_origen_documento || r.alumno_origen_documento || "",
+  alumno_documento: r.socio_origen_documento || r.alumno_origen_documento || "", // compatibilidad interna
   id_pago_origen: r.id_pago_origen || null,
-  id_alumno_origen: r.id_alumno_origen || null,
+  id_socio_origen: r.id_socio_origen || r.id_alumno_origen || null,
+  id_alumno_origen: r.id_socio_origen || r.id_alumno_origen || null, // compatibilidad interna
   numero_factura: limpiarComprobanteAutomaticoCobrador(r.comprobante),
   monto: Number.isFinite(parseFloat(r.importe)) ? parseFloat(r.importe) : 0,
   comprobante_url: r.comprobante_url || "",
@@ -587,7 +590,7 @@ export default function EgresoContable() {
   };
 
   const mostrarAlumnoProveedorCompleto = (valor) => {
-    setAlumnoProveedorCompleto(valor || "No hay alumno / proveedor especificado");
+    setAlumnoProveedorCompleto(valor || "No hay socio / proveedor especificado");
     setModalAlumnoProveedorOpen(true);
   };
 
@@ -664,7 +667,7 @@ export default function EgresoContable() {
       return;
     }
 
-    const headers = ["Fecha", "Categoría", "N° Factura", "Descripción", "Alumno / Proveedor", "Medio", "Monto (ARS)"];
+    const headers = ["Fecha", "Categoría", "N° Factura", "Descripción", "Socio / Proveedor", "Medio", "Monto (ARS)"];
     const data = rows.map((e) => [
       formatFechaDMY(e.fecha || ""),
       e.categoria || "-",
@@ -892,7 +895,7 @@ export default function EgresoContable() {
                     Descripción
                   </div>
                   <div className="gt_cell h" role="columnheader">
-                    Alumno / Proveedor
+                    Socio / Proveedor
                   </div>
                   <div className="gt_cell h center" role="columnheader">
                     Medio
@@ -951,7 +954,7 @@ export default function EgresoContable() {
                       </div>
 
                       <div className="gt_cell" role="cell">
-                        <AlumnoProveedorCell
+                        <SocioProveedorCell
                           valor={e.proveedor || "-"}
                           onShow={mostrarAlumnoProveedorCompleto}
                         />
@@ -1016,7 +1019,7 @@ export default function EgresoContable() {
         notify={addToast}
       />
 
-      <AlumnoProveedorDetalleModal
+      <SocioProveedorDetalleModal
         open={modalAlumnoProveedorOpen}
         contenido={alumnoProveedorCompleto}
         onClose={cerrarAlumnoProveedorCompleto}

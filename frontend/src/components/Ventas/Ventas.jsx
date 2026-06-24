@@ -67,7 +67,7 @@ export default function Ventas() {
   const [productosCampaniaModal, setProductosCampaniaModal] = useState([]);
   const [ordenes, setOrdenes] = useState([]);
   const [mediosPago, setMediosPago] = useState([]);
-  const [personasCatalogo, setPersonasCatalogo] = useState({ alumnos: [], personas: [] });
+  const [personasCatalogo, setPersonasCatalogo] = useState({ socios: [], personas: [] });
   const [personasCatalogoLoading, setPersonasCatalogoLoading] = useState(false);
   const [ordenCatalogosLoading, setOrdenCatalogosLoading] = useState(false);
 
@@ -158,7 +158,7 @@ export default function Ventas() {
     try {
       const data = await request("ventas_personas_catalogo");
       const catalogo = {
-        alumnos: Array.isArray(data.alumnos) ? data.alumnos : [],
+        socios: Array.isArray(data.alumnos) ? data.alumnos : (Array.isArray(data.socios) ? data.socios : []),
         personas: Array.isArray(data.personas) ? data.personas : [],
       };
       setPersonasCatalogo(catalogo);
@@ -445,13 +445,13 @@ export default function Ventas() {
 
   const hoyInput = () => new Date().toISOString().slice(0, 10);
 
-  const cursoDesdeDetalleVenta = (detalle = "") => {
+  const referenciaDesdeDetalleVenta = (detalle = "") => {
     const txt = String(detalle || "").trim();
     if (!txt) return "";
     return txt
-      .replace(/^Alumno\s*-\s*/i, "")
-      .replace(/^Curso:\s*/i, "")
-      .replace(/^Curso\s*-\s*/i, "")
+      .replace(/^Socio\s*-\s*/i, "")
+      .replace(/^Referencia:\s*/i, "")
+      .replace(/^Referencia\s*-\s*/i, "")
       .trim();
   };
 
@@ -574,7 +574,7 @@ export default function Ventas() {
       dni: o.persona_dni || o.dni || "",
       persona_nombre: o.persona_nombre || "",
       persona_detalle: o.persona_detalle || "",
-      curso_manual: o.curso_manual || cursoDesdeDetalleVenta(o.persona_detalle),
+      referencia_manual: o.referencia_manual || referenciaDesdeDetalleVenta(o.persona_detalle),
       comprador_telefono: o.comprador_telefono || "",
       estado: o.estado || "aprobada",
       id_medio_pago: o.id_medio_pago || obtenerMedioPorDefecto(preferenciaMedio),
@@ -620,7 +620,7 @@ export default function Ventas() {
         persona_dni: persona.dni || "",
         dni: persona.dni || "",
         persona_nombre: persona.nombre_apellido || "",
-        persona_detalle: persona.observacion || (persona.id_alumno ? "Persona de ventas - alumno vinculado" : "Persona de ventas"),
+        persona_detalle: persona.observacion || (persona.id_alumno ? "Persona de ventas - socio vinculado" : "Persona de ventas"),
       }));
 
       setModalPersonaVenta(false);
@@ -723,7 +723,7 @@ export default function Ventas() {
         <header className="ventas-header ventas-header--section-title">
           <div className="ventas-title-block">
             <span className="ventas-kicker">Cooperadora IPET 50</span>
-            <h1>Ventas escolares</h1>
+            <h1>Ventas generales</h1>
           </div>
 
           <button type="button" className="ventas-back" onClick={() => navigate("/panel")}>
@@ -819,7 +819,7 @@ export default function Ventas() {
         campanias={campanias}
         productos={productos}
         mediosPago={mediosPago}
-        alumnosCatalogo={personasCatalogo.alumnos}
+        sociosCatalogo={personasCatalogo.socios}
         personasCatalogo={personasCatalogo.personas}
         personasCatalogoLoading={personasCatalogoLoading}
         catalogosLoading={ordenCatalogosLoading}

@@ -52,7 +52,7 @@ export default function CampaniasTab({ tableTabs, campanias, onAdd, onEdit, onDe
                       <span>Venta #{c.id_campania}</span>
                     </div>
                     <div className="ventas-div-cell ventas-div-cell--main" role="cell">
-                      <strong>DNI persona/alumno</strong>
+                      <strong>DNI persona/socio</strong>
                       <span>{c.pregunta_persona || "Sin pregunta configurada."}</span>
                     </div>
                     <div className="ventas-div-cell ventas-div-cell--main ventas-div-cell--principal-precios" role="cell">

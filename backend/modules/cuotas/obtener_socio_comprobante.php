@@ -26,7 +26,7 @@ if ($id <= 0) {
 try {
     /**
      * Tablas según tu esquema:
-     *  - alumnos (id_alumno, ..., id_año, id_division, id_categoria, id_cat_monto, ...)
+     *  - alumnos (id_alumno, ..., id_año, id_division, id_cat_monto, ...)
      *  - division (id_division, nombre_division)
      *  - anio (id_año, nombre_año)
      *  - categoria_monto (id_cat_monto, nombre_categoria, monto_mensual, monto_anual)
@@ -42,7 +42,7 @@ try {
             a.telefono,
             a.`id_año`           AS a_id_anio,
             a.id_division,
-            a.id_categoria,
+            a.id_cat_monto AS id_categoria,
             a.id_cat_monto,
 
             cm.nombre_categoria   AS cm_nombre_categoria,

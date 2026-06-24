@@ -66,6 +66,19 @@ function obtener_max_fecha(PDO $pdo): ?string {
 }
 
 
+
+function contable_tabla_existe(PDO $pdo, string $tabla): bool {
+  $st = $pdo->prepare("
+    SELECT 1
+      FROM information_schema.TABLES
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = :tabla
+     LIMIT 1
+  ");
+  $st->execute([':tabla' => $tabla]);
+  return (bool)$st->fetchColumn();
+}
+
 function contable_columna_existe(PDO $pdo, string $tabla, string $columna): bool {
   $st = $pdo->prepare("
     SELECT 1
@@ -136,15 +149,29 @@ try {
     }
 
     $tieneIdPagoOrigen = contable_columna_existe($pdo, 'egresos', 'id_pago_origen');
+    $tieneIdSocioOrigen = contable_columna_existe($pdo, 'egresos', 'id_socio_origen');
     $tieneIdAlumnoOrigen = contable_columna_existe($pdo, 'egresos', 'id_alumno_origen');
 
     $selectOrigenPago = $tieneIdPagoOrigen ? "e.id_pago_origen" : "NULL AS id_pago_origen";
-    $selectOrigenAlumno = $tieneIdAlumnoOrigen
-      ? "e.id_alumno_origen, TRIM(CONCAT(COALESCE(aorig.apellido,''), ' ', COALESCE(aorig.nombre,''))) AS alumno_origen_nombre, aorig.num_documento AS alumno_origen_documento"
-      : "NULL AS id_alumno_origen, NULL AS alumno_origen_nombre, NULL AS alumno_origen_documento";
-    $joinOrigenAlumno = $tieneIdAlumnoOrigen
-      ? "LEFT JOIN alumnos aorig ON aorig.id_alumno = e.id_alumno_origen"
-      : "";
+
+    $selectOrigenSocio = "NULL AS id_socio_origen, NULL AS id_alumno_origen, NULL AS socio_origen_nombre, NULL AS alumno_origen_nombre, NULL AS socio_origen_documento, NULL AS alumno_origen_documento";
+    $joinOrigenSocio = "";
+
+    if ($tieneIdSocioOrigen || $tieneIdAlumnoOrigen) {
+      $personaTable = contable_tabla_existe($pdo, 'socios') ? 'socios' : 'alumnos';
+      $personaIdCol = contable_columna_existe($pdo, $personaTable, 'id_socio') ? 'id_socio' : (contable_columna_existe($pdo, $personaTable, 'id_alumno') ? 'id_alumno' : 'id');
+      $origenCol = $tieneIdSocioOrigen ? 'id_socio_origen' : 'id_alumno_origen';
+      $nombreCol = contable_columna_existe($pdo, $personaTable, 'nombre') ? 'nombre' : (contable_columna_existe($pdo, $personaTable, 'nombres') ? 'nombres' : null);
+      $apellidoCol = contable_columna_existe($pdo, $personaTable, 'apellido') ? 'apellido' : (contable_columna_existe($pdo, $personaTable, 'apellidos') ? 'apellidos' : null);
+      $docCol = contable_columna_existe($pdo, $personaTable, 'num_documento') ? 'num_documento' : (contable_columna_existe($pdo, $personaTable, 'dni') ? 'dni' : (contable_columna_existe($pdo, $personaTable, 'documento') ? 'documento' : null));
+
+      $nombreExpr = $nombreCol ? "COALESCE(aorig.`$nombreCol`, '')" : "''";
+      $apellidoExpr = $apellidoCol ? "COALESCE(aorig.`$apellidoCol`, '')" : "''";
+      $docExpr = $docCol ? "aorig.`$docCol`" : "NULL";
+
+      $selectOrigenSocio = "e.`$origenCol` AS id_socio_origen, e.`$origenCol` AS id_alumno_origen, TRIM(CONCAT($apellidoExpr, ' ', $nombreExpr)) AS socio_origen_nombre, TRIM(CONCAT($apellidoExpr, ' ', $nombreExpr)) AS alumno_origen_nombre, $docExpr AS socio_origen_documento, $docExpr AS alumno_origen_documento";
+      $joinOrigenSocio = "LEFT JOIN `$personaTable` aorig ON aorig.`$personaIdCol` = e.`$origenCol`";
+    }
 
     // Traigo los registros y el total decimal (2 decimales)
     $sql = "
@@ -163,13 +190,13 @@ try {
         e.importe,
         e.comprobante_url,
         $selectOrigenPago,
-        $selectOrigenAlumno
+        $selectOrigenSocio
       FROM egresos e
       LEFT JOIN contable_categoria   cc ON cc.id_cont_categoria   = e.id_cont_categoria
       LEFT JOIN contable_proveedor   cp ON cp.id_cont_proveedor   = e.id_cont_proveedor
       LEFT JOIN contable_descripcion cd ON cd.id_cont_descripcion = e.id_cont_descripcion
       INNER JOIN medio_pago          mp ON mp.id_medio_pago       = e.id_medio_pago
-      $joinOrigenAlumno
+      $joinOrigenSocio
       WHERE $where
       ORDER BY e.fecha DESC, e.id_egreso DESC
     ";

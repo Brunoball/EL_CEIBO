@@ -60,7 +60,7 @@ export default function ModalPersonaVenta({ abierto, form, setForm, saving, onCl
             <textarea
               value={form.observacion || ""}
               onChange={(e) => setField("observacion", e.target.value)}
-              placeholder="Curso, referencia o aclaración interna"
+              placeholder="Referencia, referencia o aclaración interna"
               maxLength={255}
               rows={3}
             />

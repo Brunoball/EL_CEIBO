@@ -104,7 +104,7 @@ const AlumnoBaja = () => {
 
   /* ============ Carga inicial ============ */
   useEffect(() => {
-    const obtenerAlumnosBaja = async () => {
+    const obtenerSociosBaja = async () => {
       setCargando(true);
       try {
         const res = await fetch(
@@ -124,13 +124,13 @@ const AlumnoBaja = () => {
         setToast({
           show: true,
           tipo: "error",
-          mensaje: "Error de conexión al cargar alumnos",
+          mensaje: "Error de conexión al cargar socios",
         });
       } finally {
         setCargando(false);
       }
     };
-    obtenerAlumnosBaja();
+    obtenerSociosBaja();
   }, []);
 
   /* ============ UX: abrir datepicker ============ */
@@ -195,7 +195,7 @@ const AlumnoBaja = () => {
         setToast({
           show: true,
           tipo: "exito",
-          mensaje: "Alumno dado de alta correctamente",
+          mensaje: "Socio dado de alta correctamente",
         });
       } else {
         setToast({
@@ -230,7 +230,7 @@ const AlumnoBaja = () => {
         setToast({
           show: true,
           tipo: "exito",
-          mensaje: "Alumno eliminado definitivamente",
+          mensaje: "Socio eliminado definitivamente",
         });
       } else {
         setToast({
@@ -280,7 +280,7 @@ const AlumnoBaja = () => {
           tipo: "exito",
           mensaje: `Se eliminaron definitivamente ${
             data.eliminados ?? ids.length
-          } alumno(s).`,
+          } socio(s).`,
         });
       } else {
         setToast({
@@ -328,9 +328,9 @@ const AlumnoBaja = () => {
       ws["!cols"] = [{ wch: 8 }, { wch: 32 }, { wch: 12 }, { wch: 40 }];
 
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "AlumnosBaja");
+      XLSX.utils.book_append_sheet(wb, ws, "SociosBaja");
 
-      const nombre = `alumnos_baja_${hoyISO()}.xlsx`;
+      const nombre = `socios_baja_${hoyISO()}.xlsx`;
       XLSX.writeFile(wb, nombre);
     } catch (e) {
       console.error(e);
@@ -377,7 +377,7 @@ const AlumnoBaja = () => {
       <div className="emp-baja-glass">
         <div className="emp-baja-barra-superior">
           <div className="emp-baja-titulo-container">
-            <h2 className="emp-baja-titulo">Alumnos Dados de Baja</h2>
+            <h2 className="emp-baja-titulo">Socios Dados de Baja</h2>
           </div>
 
           <button
@@ -429,7 +429,7 @@ const AlumnoBaja = () => {
 
       {/* Tabla / Lista */}
       {cargando ? (
-        <p className="emp-baja-cargando">Cargando alumnos dados de baja...</p>
+        <p className="emp-baja-cargando">Cargando socios dados de baja...</p>
       ) : (
         <div className="emp-baja-tabla-container">
           <div className="emp-baja-controles-superiores">
@@ -477,7 +477,7 @@ const AlumnoBaja = () => {
             {alumnosFiltrados.length === 0 ? (
               <div className="emp-baja-sin-resultados emp-baja-sin-resultados--fill">
                 <FaUserCheck className="emp-baja-sin-icono" />
-                No hay alumnos dados de baja
+                No hay socios dados de baja
               </div>
             ) : (
               alumnosFiltrados.map((a) => (

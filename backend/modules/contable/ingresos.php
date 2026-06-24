@@ -4,7 +4,7 @@
  *
  * Unificado:
  * - CRUD ingresos (cuando viene ?op=create|update|get)
- * - Informe de pagos alumnos (cuando NO viene ?op)
+ * - Informe de pagos socios (cuando NO viene ?op)
  *
  * Endpoints:
  *   CRUD:
@@ -12,7 +12,7 @@
  *     POST  /api.php?action=contable_ingresos&op=update
  *     GET   /api.php?action=contable_ingresos&op=get&id=#
  *
- *   Informe alumnos/pagos:
+ *   Informe socios/pagos:
  *     GET   /api.php?action=contable_ingresos&year=YYYY&detalle=1
  *     GET   /api.php?action=contable_ingresos&start=YYYY-MM-DD&end=YYYY-MM-DD&detalle=1
  */
@@ -30,7 +30,7 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->exec("SET NAMES utf8mb4");
 
-    // No sincronizar ventas en lecturas de ingresos/alumnos.
+    // No sincronizar ventas en lecturas de ingresos/socios.
     // La sincronización anterior podía insertar ingresos de ventas repetidos cada vez
     // que el usuario entraba o cambiaba de pestaña.
 
@@ -235,7 +235,7 @@ try {
         }
     }
 
-    /* ========================= Informe alumnos/pagos ========================= */
+    /* ========================= Informe socios/pagos ========================= */
     $yearParam = $_GET['year'] ?? null;
     $hasYearParam = $yearParam !== null && $yearParam !== '';
 
@@ -290,35 +290,49 @@ try {
         rsort($aniosDisponibles);
     }
 
-    // detectar columnas en alumnos
-    $nombreCandidates   = ['nombre', 'nombres', 'nombre_alumno'];
-    $apellidoCandidates = ['apellido', 'apellidos', 'apellido_alumno'];
-
-    $nombreCol = null;
-    foreach ($nombreCandidates as $c) if ($columnExists($pdo, 'alumnos', $c)) { $nombreCol = $c; break; }
-    if (!$nombreCol) $nombreCol = $nombreCandidates[0];
-
-    $apellidoCol = null;
-    foreach ($apellidoCandidates as $c) if ($columnExists($pdo, 'alumnos', $c)) { $apellidoCol = $c; break; }
-    if (!$apellidoCol) $apellidoCol = $apellidoCandidates[0];
-
-    // detectar tabla y columna de categoría
-    $categoriaTable = null;
-    if ($tableExists($pdo, 'categoria'))          $categoriaTable = 'categoria';
-    elseif ($tableExists($pdo, 'categorias'))     $categoriaTable = 'categorias';
-
-    $catNameCol = null;
-    if ($categoriaTable) {
-        foreach (['nombre_categoria','Nombre_Categoria','nombre'] as $c) {
-            if ($columnExists($pdo, $categoriaTable, $c)) { $catNameCol = $c; break; }
-        }
-        if (!$catNameCol) $categoriaTable = null;
+    // Detectar estructura de personas del club: nueva tabla socios o estructura legacy alumnos.
+    $personaTable = $tableExists($pdo, 'socios') ? 'socios' : 'alumnos';
+    $personaIdCol = null;
+    foreach (['id_socio', 'id_alumno', 'id'] as $c) {
+        if ($columnExists($pdo, $personaTable, $c)) { $personaIdCol = $c; break; }
     }
+    if (!$personaIdCol) $personaIdCol = $personaTable === 'socios' ? 'id_socio' : 'id_alumno';
 
-    $selectNombre    = $columnExists($pdo, 'alumnos', $nombreCol)   ? "a.`$nombreCol` AS nombre_alumno"      : "NULL AS nombre_alumno";
-    $selectApellido  = $columnExists($pdo, 'alumnos', $apellidoCol) ? "a.`$apellidoCol` AS apellido_alumno"  : "NULL AS apellido_alumno";
-    $joinCategoria   = $categoriaTable ? "LEFT JOIN `$categoriaTable` c ON c.id_categoria = a.id_categoria"   : "";
-    $selectCategoria = $categoriaTable ? "c.`$catNameCol` AS nombre_categoria"                                 : "NULL AS nombre_categoria";
+    $pagoPersonaCol = $columnExists($pdo, 'pagos', 'id_socio') ? 'id_socio' : 'id_alumno';
+
+    $firstColumn = function(string $table, array $candidates) use ($pdo, $columnExists): ?string {
+        foreach ($candidates as $c) {
+            if ($columnExists($pdo, $table, $c)) return $c;
+        }
+        return null;
+    };
+
+    $nombreCol = $firstColumn($personaTable, ['nombre', 'nombres', 'nombre_socio', 'nombre_alumno', 'razon_social']);
+    $apellidoCol = $firstColumn($personaTable, ['apellido', 'apellidos', 'apellido_socio', 'apellido_alumno']);
+
+    $selectNombre   = $nombreCol   ? "a.`$nombreCol` AS nombre_socio"     : "NULL AS nombre_socio";
+    $selectApellido = $apellidoCol ? "a.`$apellidoCol` AS apellido_socio" : "NULL AS apellido_socio";
+
+    // Categoría del club: soporta categoria_monto.id_cat_monto y estructuras nuevas con categorias.id_categoria.
+    $catPersonaCol = $firstColumn($personaTable, ['id_cat_monto', 'id_categoria', 'id_categorias']);
+    $joinCategoria = "";
+    $selectCategoria = "NULL AS nombre_categoria";
+    $selectIdCat = $catPersonaCol ? "a.`$catPersonaCol` AS id_categoria" : "NULL AS id_categoria";
+
+    if ($catPersonaCol === 'id_cat_monto' && $tableExists($pdo, 'categoria_monto')) {
+        $catNombreCol = $firstColumn('categoria_monto', ['nombre_categoria', 'nombre', 'categoria']);
+        if ($catNombreCol) {
+            $joinCategoria = "LEFT JOIN categoria_monto cm ON cm.id_cat_monto = a.`$catPersonaCol`";
+            $selectCategoria = "cm.`$catNombreCol` AS nombre_categoria";
+        }
+    } elseif ($catPersonaCol && $tableExists($pdo, 'categorias')) {
+        $catIdCol = $firstColumn('categorias', ['id_categoria', 'id_categorias', 'id']);
+        $catNombreCol = $firstColumn('categorias', ['nombre_categoria', 'nombre', 'categoria', 'denominacion']);
+        if ($catIdCol && $catNombreCol) {
+            $joinCategoria = "LEFT JOIN categorias cm ON cm.`$catIdCol` = a.`$catPersonaCol`";
+            $selectCategoria = "cm.`$catNombreCol` AS nombre_categoria";
+        }
+    }
 
     // WHERE (filtrado por fecha_pago, como ya lo tenías)
     $where = "UPPER(p.estado)='PAGADO'";
@@ -343,13 +357,14 @@ try {
             p.anio_aplicado,
             p.id_medio_pago,
             mp.medio_pago AS medio_texto,
-            a.id_alumno,
+            a.`$personaIdCol` AS id_socio,
+            p.`$pagoPersonaCol` AS id_persona_pago,
             $selectNombre,
             $selectApellido,
-            a.id_categoria,
+            $selectIdCat,
             $selectCategoria
         FROM pagos p
-        LEFT JOIN alumnos a   ON a.id_alumno = p.id_alumno
+        LEFT JOIN `$personaTable` a ON a.`$personaIdCol` = p.`$pagoPersonaCol`
         $joinCategoria
         LEFT JOIN medio_pago mp ON mp.id_medio_pago = p.id_medio_pago
         WHERE $where
@@ -380,9 +395,9 @@ try {
         if ($wantDetalle) {
             if (!isset($detalle[$key])) $detalle[$key] = [];
 
-            $nombre   = trim((string)($r['nombre_alumno'] ?? ''));
-            $apellido = trim((string)($r['apellido_alumno'] ?? ''));
-            $alumno   = trim(($nombre . ' ' . $apellido)) ?: '(SIN ALUMNO)';
+            $nombre   = trim((string)($r['nombre_socio'] ?? ''));
+            $apellido = trim((string)($r['apellido_socio'] ?? ''));
+            $socio    = trim(($nombre . ' ' . $apellido)) ?: '(SIN SOCIO)';
 
             $catNom   = (string)($r['nombre_categoria'] ?? '');
             if ($catNom === '' || $catNom === null) $catNom = 'SIN CATEGORÍA';
@@ -399,7 +414,10 @@ try {
 
             $detalle[$key][] = [
                 'fecha_pago'     => $fecha,
-                'Alumno'         => $alumno,
+                'ID_Socio'       => (int)($r['id_socio'] ?? $r['id_persona_pago'] ?? 0),
+                'ID_Alumno'      => (int)($r['id_socio'] ?? $r['id_persona_pago'] ?? 0), // compatibilidad legacy
+                'Socio'          => $socio,
+                'Alumno'         => $socio, // compatibilidad legacy
                 'Categoria'      => $catNom,
                 'Monto'          => $monto,
                 'Mes_pagado'     => $mesNom . ' / ' . $anioAplicado,

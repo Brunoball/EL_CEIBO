@@ -6,9 +6,9 @@
 //php -S localhost:3001 -c "C:\PHP\php1\php.ini"
 
 $host = 'localhost';
-$dbname = 'cooperadora';
+$dbname = 'el_ceibo';
 $user = 'root'; // Cambialo si usás otro usuario
-$pass = 'Gastex2233'; // Cambialo si tenés contraseña
+$pass = 'brunoball516'; // Cambialo si tenés contraseña
 
 
 try {

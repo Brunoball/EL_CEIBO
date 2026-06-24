@@ -55,7 +55,7 @@ try {
     $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
     $detalles = [];
-    $idsMeses = []; // 3..12
+    $idsMeses = []; // 1..12
     $idsTodos = []; // 1..16
 
     foreach ($rows as $r) {
@@ -74,8 +74,8 @@ try {
         $idsTodos[$id_mes] = true;
       }
 
-      // compat: solo meses escolares 3..12
-      if ($id_mes >= 3 && $id_mes <= 12) {
+      // compat: meses comunes 1..12
+      if ($id_mes >= 1 && $id_mes <= 12) {
         $idsMeses[$id_mes] = true;
       }
     }
@@ -126,7 +126,7 @@ try {
         $idsTodos[$id_mes] = true;
       }
 
-      if ($id_mes >= 3 && $id_mes <= 12) {
+      if ($id_mes >= 1 && $id_mes <= 12) {
         $idsMeses[$id_mes] = true;
       }
     }

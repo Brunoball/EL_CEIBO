@@ -31,18 +31,12 @@ const EditarAlumno = () => {
   const [domicilio, setDomicilio] = useState('');
   const [localidad, setLocalidad] = useState('');
   const [telefono, setTelefono] = useState('');
-  const [id_anio, setIdAnio] = useState('');
-  const [id_division, setIdDivision] = useState('');
-  const [id_categoria, setIdCategoria] = useState('');
-  const [id_cat_monto, setIdCatMonto] = useState('');      // ⬅️ NUEVO
+  const [id_cat_monto, setIdCatMonto] = useState('');
   const [ingreso, setIngreso] = useState('');
   const [observaciones, setObservaciones] = useState('');
 
   // Listas
-  const [anios, setAnios] = useState([]);
-  const [divisiones, setDivisiones] = useState([]);
   const [categorias, setCategorias] = useState([]);
-  const [categoriasMonto, setCategoriasMonto] = useState([]); // ⬅️ NUEVO
   const [sexos, setSexos] = useState([]);
   const [tiposDocumento, setTiposDocumento] = useState([]);
 
@@ -78,23 +72,14 @@ const EditarAlumno = () => {
 
       if (jsonListas.exito) {
         const L = jsonListas.listas || {};
-        setAnios(L.anios || []);
-        setDivisiones(L.divisiones || []);
-        setCategorias(L.categorias || []);
-        setSexos(L.sexos || []);
-        setTiposDocumento(L.tipos_documentos || []);
-        // intenta primero 'categorias_monto'; si no, usa un fallback compatible
-        const cm = Array.isArray(L.categorias_monto)
-          ? L.categorias_monto
-          : (Array.isArray(L.categorias) && L.categorias[0]?.monto_mensual !== undefined)
-              ? L.categorias
-              : [];
-        setCategoriasMonto(cm.map(r => ({
+        setCategorias((L.categorias || []).map(r => ({
           id: r.id ?? r.id_cat_monto,
           nombre: r.nombre ?? r.nombre_categoria ?? '',
           monto_mensual: r.monto_mensual ?? r.monto ?? null,
           monto_anual: r.monto_anual ?? null
         })));
+        setSexos(L.sexos || []);
+        setTiposDocumento(L.tipos_documentos || []);
       } else {
         showToast('Error al cargar listas: ' + (jsonListas.mensaje || ''), 'error');
       }
@@ -114,10 +99,7 @@ const EditarAlumno = () => {
         setDomicilio(a.domicilio || '');
         setLocalidad(a.localidad || '');
         setTelefono(a.telefono || '');
-        setIdAnio(a.id_anio || '');
-        setIdDivision(a.id_division || '');
-        setIdCategoria(a.id_categoria || '');
-        setIdCatMonto(a.id_cat_monto ?? '');           // ⬅️ NUEVO
+        setIdCatMonto(a.id_cat_monto ?? a.id_categoria ?? '');
         setIngreso(a.ingreso || '');
         setObservaciones(a.observaciones || '');
       } else {
@@ -147,7 +129,7 @@ const EditarAlumno = () => {
   const guardarAlumno = async () => {
     if (!apellido?.trim()) return showToast('El apellido es obligatorio.', 'error');
     if (!num_documento?.trim()) return showToast('El documento es obligatorio.', 'error');
-    if (!id_anio || !id_division || !id_categoria) return showToast('Año, División y Categoría son obligatorios.', 'error');
+    if (!id_cat_monto) return showToast('La categoría es obligatoria.', 'error');
     if (!ingreso || !esFechaISO(ingreso)) return showToast('La fecha de ingreso es obligatoria y debe ser AAAA-MM-DD.', 'error');
 
     try {
@@ -164,10 +146,9 @@ const EditarAlumno = () => {
           domicilio: aMayus(domicilio) || null,
           localidad: aMayus(localidad) || null,
           telefono: telefono || null,
-          id_anio: id_anio || null,          // mapea a `id_año`
-          id_division: id_division || null,
-          id_categoria: id_categoria || null,
-          id_cat_monto: id_cat_monto || null, // ⬅️ NUEVO
+          id_anio: null,
+          id_division: null,
+          id_cat_monto: id_cat_monto || null,
           ingreso: ingreso,
           observaciones: (observaciones !== '' ? observaciones : null)
         }),
@@ -176,7 +157,7 @@ const EditarAlumno = () => {
       const data = await response.json();
 
       if (data.exito) {
-        showToast('Alumno actualizado correctamente', 'exito');
+        showToast('Socio actualizado correctamente', 'exito');
         setTimeout(() => navigate('/alumnos'), 800);
       } else {
         showToast(data.mensaje || 'Error al actualizar.', 'error');
@@ -196,7 +177,7 @@ const EditarAlumno = () => {
         </div>
       ) : (
         <>
-          <h2 className="edit-socio-title">Editar Alumno #{idAlumno}</h2>
+          <h2 className="edit-socio-title">Editar Socio #{idAlumno}</h2>
           <div className="edit-socio-subtitle">
             {[apellido, nombre].filter(Boolean).join(' ')}
           </div>
@@ -207,7 +188,7 @@ const EditarAlumno = () => {
 
   const Tabs = (
     <div className="edit-socio-tabs" role="tablist" aria-label="Secciones de edición">
-      {['informacion','escolaridad','otros'].map(tab => (
+      {['informacion','cuota','otros'].map(tab => (
         <button
           key={tab}
           className={`edit-socio-tab ${activeTab === tab ? 'active' : ''} ${cargando ? 'is-disabled' : ''}`}
@@ -219,11 +200,11 @@ const EditarAlumno = () => {
           disabled={cargando}
         >
           <FontAwesomeIcon
-            icon={tab==='informacion' ? faUser : tab==='escolaridad' ? faGraduationCap : faInfoCircle}
+            icon={tab==='informacion' ? faUser : tab==='cuota' ? faGraduationCap : faInfoCircle}
             className="edit-socio-tab-icon"
           />
           <span className="tab-text">
-            {tab==='informacion' ? 'Información' : tab==='escolaridad' ? 'Escolaridad' : 'Otros'}
+            {tab==='informacion' ? 'Información' : tab==='cuota' ? 'Cuota' : 'Otros'}
           </span>
         </button>
       ))}
@@ -265,7 +246,7 @@ const EditarAlumno = () => {
         />
       )}
 
-      <div className="edit-socio-box edit-socio-animate-in" role="region" aria-label="Editar alumno">
+      <div className="edit-socio-box edit-socio-animate-in" role="region" aria-label="Editar socio">
         {Header}
         {Tabs}
 
@@ -434,67 +415,20 @@ const EditarAlumno = () => {
               </div>
             )}
 
-            {activeTab === 'escolaridad' && (
+            {activeTab === 'cuota' && (
               <div className="edit-socio-tab-content">
-                <div className="edit-socio-input-group">
-                  <div className="edit-fl-wrapper always-active">
-                    <label htmlFor="id_anio" className="edit-fl-label">Año *</label>
-                    <select
-                      id="id_anio"
-                      value={id_anio || ''}
-                      onChange={(e) => setIdAnio(e.target.value)}
-                      className="edit-socio-input edit-select"
-                    >
-                      <option value="" disabled>Seleccione un año</option>
-                      {anios.map((anio) => (
-                        <option key={anio.id} value={anio.id}>{anio.nombre}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="edit-fl-wrapper always-active">
-                    <label htmlFor="id_division" className="edit-fl-label">División *</label>
-                    <select
-                      id="id_division"
-                      value={id_division || ''}
-                      onChange={(e) => setIdDivision(e.target.value)}
-                      className="edit-socio-input edit-select"
-                    >
-                      <option value="" disabled>Seleccione una división</option>
-                      {divisiones.map((division) => (
-                        <option key={division.id} value={division.id}>{division.nombre}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
 
                 <div className="edit-socio-input-group">
                   <div className="edit-fl-wrapper always-active">
-                    <label htmlFor="id_categoria" className="edit-fl-label">Categoría *</label>
-                    <select
-                      id="id_categoria"
-                      value={id_categoria || ''}
-                      onChange={(e) => setIdCategoria(e.target.value)}
-                      className="edit-socio-input edit-select"
-                    >
-                      <option value="" disabled>Seleccione una categoría</option>
-                      {categorias.map((categoria) => (
-                        <option key={categoria.id} value={String(categoria.id)}>{categoria.nombre}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* ⬇️ NUEVO: Categoría (monto) */}
-                  <div className="edit-fl-wrapper always-active">
-                    <label htmlFor="id_cat_monto" className="edit-fl-label">Categoría (monto)</label>
+                    <label htmlFor="id_cat_monto" className="edit-fl-label">Categoría *</label>
                     <select
                       id="id_cat_monto"
                       value={id_cat_monto || ''}
                       onChange={(e) => setIdCatMonto(e.target.value)}
                       className="edit-socio-input edit-select"
                     >
-                      <option value="">Seleccionar</option>
-                      {categoriasMonto.map((c) => (
+                      <option value="" disabled>Seleccione una categoría</option>
+                      {categorias.map((c) => (
                         <option key={c.id} value={String(c.id)}>
                           {c.nombre}{c.monto_mensual!=null ? ` — $${Number(c.monto_mensual).toLocaleString('es-AR')}/mes` : ''}
                         </option>

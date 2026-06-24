@@ -4,14 +4,13 @@ require_once __DIR__ . '/../../config/db.php';
 header('Content-Type: application/json; charset=utf-8');
 
 const ID_MES_ANUAL        = 13; // CONTADO ANUAL
-const ID_MES_MATRICULA    = 14; // MATRÍCULA
 const ID_MES_1ER_MITAD    = 15; // 1ER MITAD
 const ID_MES_2DA_MITAD    = 16; // 2DA MITAD
 
 // Rangos de meses cubiertos por mitades
-const MITAD1_DESDE = 3;  // MARZO
-const MITAD1_HASTA = 7;  // JULIO
-const MITAD2_DESDE = 8;  // AGOSTO
+const MITAD1_DESDE = 1;  // ENERO
+const MITAD1_HASTA = 6;  // JUNIO
+const MITAD2_DESDE = 7;  // JULIO
 const MITAD2_HASTA = 12; // DICIEMBRE
 
 /**
@@ -81,17 +80,6 @@ try {
   $anioFiltro  = isset($_GET['anio']) ? max(1900, (int)$_GET['anio']) : (int)date('Y');
   $idMesFiltro = isset($_GET['id_mes']) ? (int)$_GET['id_mes'] : 0;
 
-  // Enero y febrero no se usan en cuotas escolares.
-  // Si llegan por URL/API, se devuelve una lista vacía controlada para evitar confusiones.
-  if ($idMesFiltro === 1 || $idMesFiltro === 2) {
-    echo json_encode([
-      'exito' => true,
-      'cuotas' => [],
-      'mensaje' => 'Enero y febrero no están habilitados para cuotas escolares.',
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-  }
-
   $soloPagados = isset($_GET['pagados']);
   $soloCondon  = isset($_GET['condonados']);
 
@@ -105,13 +93,11 @@ try {
   $meses = [];
   foreach ($mesesRows as $m) {
     $idMesCatalogo = (int)$m['id_mes'];
-    if ($idMesCatalogo === 1 || $idMesCatalogo === 2) continue;
     $meses[$idMesCatalogo] = (string)$m['nombre'];
   }
 
   // fallback por si faltan en tabla (seguridad)
   if (!isset($meses[ID_MES_ANUAL]))      $meses[ID_MES_ANUAL]      = 'CONTADO ANUAL';
-  if (!isset($meses[ID_MES_MATRICULA]))  $meses[ID_MES_MATRICULA]  = 'MATRICULA';
   if (!isset($meses[ID_MES_1ER_MITAD]))  $meses[ID_MES_1ER_MITAD]  = '1ER MITAD';
   if (!isset($meses[ID_MES_2DA_MITAD]))  $meses[ID_MES_2DA_MITAD]  = '2DA MITAD';
 
@@ -130,7 +116,7 @@ try {
     SELECT
       a.id_alumno, a.apellido, a.nombre, a.num_documento,
       a.domicilio, a.localidad, a.telefono,
-      a.id_año, a.id_division, a.id_categoria, a.activo, a.ingreso,
+      a.id_año, a.id_division, a.id_cat_monto AS id_categoria, a.id_cat_monto, a.activo, a.ingreso,
       a.es_cobrador
     FROM alumnos a
   ";
@@ -151,7 +137,7 @@ try {
           SELECT 1
             FROM pagos p
            WHERE p.id_alumno = a.id_alumno
-             AND p.id_mes IN (:mes_consulta, :mes_anual, :mes_mitad, :mes_matricula)
+             AND p.id_mes IN (:mes_consulta, :mes_anual, :mes_mitad)
              AND p.estado IN ('pagado','condonado')
              AND p.anio_aplicado = :anio_aplicado
         )
@@ -160,7 +146,6 @@ try {
     $bind[':mes_consulta']   = (int)($idMesFiltro ?: 0);
     $bind[':mes_anual']      = (int)ID_MES_ANUAL;
     $bind[':mes_mitad']      = (int)($mesMitadConsulta ?: 0);
-    $bind[':mes_matricula']  = (int)ID_MES_MATRICULA;
     $bind[':anio_aplicado']  = (int)$anioFiltro;
   } else {
     $where[] = "a.activo = 1";
@@ -183,21 +168,10 @@ try {
   $paramsPagos = [':anio' => (int)$anioFiltro];
 
   $mostrarSoloAnual      = ($idMesFiltro === ID_MES_ANUAL);
-  $mostrarSoloMatricula  = ($idMesFiltro === ID_MES_MATRICULA);
   $mostrarSoloMitad1     = ($idMesFiltro === ID_MES_1ER_MITAD);
   $mostrarSoloMitad2     = ($idMesFiltro === ID_MES_2DA_MITAD);
 
-  if ($mostrarSoloMatricula) {
-    $sqlPag = "
-      SELECT id_alumno, id_mes, estado
-        FROM pagos
-       WHERE estado IN ('pagado','condonado')
-         AND anio_aplicado = :anio
-         AND id_mes = :matricula
-    ";
-    $paramsPagos[':matricula'] = (int)ID_MES_MATRICULA;
-  } else {
-    $debeFiltrarPorMes = ($idMesFiltro > 0 && $idMesFiltro !== ID_MES_ANUAL);
+  $debeFiltrarPorMes = ($idMesFiltro > 0 && $idMesFiltro !== ID_MES_ANUAL);
 
     if ($debeFiltrarPorMes) {
       $sqlPag = "
@@ -217,7 +191,6 @@ try {
          WHERE estado IN ('pagado','condonado')
            AND anio_aplicado = :anio
       ";
-    }
   }
 
   $stPag = $pdo->prepare($sqlPag);
@@ -230,7 +203,6 @@ try {
   // Indexación de pagos
   $pagoDirecto   = [];
   $pagoAnual     = [];
-  $pagoMatricula = [];
   $pagoMitad1    = [];
   $pagoMitad2    = [];
 
@@ -240,7 +212,6 @@ try {
     $est = ($p['estado'] === 'condonado') ? 'condonado' : 'pagado';
 
     if ($idm === ID_MES_ANUAL)       { $pagoAnual[$ida] = $est; continue; }
-    if ($idm === ID_MES_MATRICULA)   { $pagoMatricula[$ida] = $est; continue; }
     if ($idm === ID_MES_1ER_MITAD)   { $pagoMitad1[$ida] = $est; continue; }
     if ($idm === ID_MES_2DA_MITAD)   { $pagoMitad2[$ida] = $est; continue; }
 
@@ -255,37 +226,6 @@ try {
     $apellido = trim((string)($a['apellido'] ?? ''));
     $nombre   = trim((string)($a['nombre'] ?? ''));
     $nombreCompleto = trim($apellido . ', ' . $nombre, ', ');
-
-    // ==========================
-    // ✅ MATRÍCULA (id_mes = 14)
-    // ==========================
-    if ($mostrarSoloMatricula) {
-      if (!alumnoElegible($a, 1, $anioFiltro)) continue;
-
-      $estado = isset($pagoMatricula[$idAlu]) ? $pagoMatricula[$idAlu] : 'deudor';
-      if ($soloPagados && $estado !== 'pagado') continue;
-      if ($soloCondon  && $estado !== 'condonado') continue;
-
-      $cuotas[] = [
-        'id_alumno'    => $idAlu,
-        'nombre'       => $nombreCompleto,
-        'dni'          => (string)($a['num_documento'] ?? ''),
-        'domicilio'    => (string)($a['domicilio'] ?? ''),
-        'estado'       => ((int)($a['activo'] ?? 0) === 1 ? 'ACTIVO' : 'INACTIVO'),
-        'medio_pago'   => '',
-        'mes'          => $meses[ID_MES_MATRICULA],
-        'id_mes'       => ID_MES_MATRICULA,
-        'id_año'       => (int)($a['id_año'] ?? 0),
-        'id_anio'      => (int)($a['id_año'] ?? 0),
-        'id_division'  => (int)($a['id_division'] ?? 0),
-        'id_categoria' => (int)($a['id_categoria'] ?? 0),
-        'estado_pago'  => $estado,
-        'origen_anual' => 0,
-        'es_cobrador'  => (int)($a['es_cobrador'] ?? 0),
-        'anio_aplicado'=> (int)$anioFiltro,
-      ];
-      continue;
-    }
 
     // ==========================
     // ✅ ANUAL (id_mes = 13)
