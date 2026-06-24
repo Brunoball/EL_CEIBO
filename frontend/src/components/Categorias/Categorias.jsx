@@ -235,7 +235,7 @@ function DescuentosFamiliaresPanel({ showToast }) {
           </p>
         </div>
         <button className="cat_btn cat_btn_primary" onClick={guardar} disabled={saving || loading} type="button">
-          <FontAwesomeIcon icon={faSave} /> {saving ? 'Guardando…' : 'Guardar descuentos'}
+          <FontAwesomeIcon icon={faSave} /> {saving ? 'Guardando…' : 'Guardar '}
         </button>
       </div>
 
@@ -386,86 +386,7 @@ const Categorias = () => {
   return (
     <div className="cat_page">
       <div className="cat_card">
-        <header className="cat_header">
-          <h2 className="cat_title">Categorías</h2>
-        </header>
-
-        <div className="cat_list">
-          <div className="cat_list_head">
-            <div className="cat_col cat_col_name cat_head_cell">Nombre</div>
-            <div className="cat_col cat_col_amount cat_head_cell cat_center">Mensual</div>
-            <div className="cat_col cat_col_amount cat_head_cell cat_center">Anual</div>
-            <div className="cat_col cat_col_actions cat_head_cell cat_right">Acciones</div>
-          </div>
-
-          {loading ? (
-            <>
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="cat_row cat_row_skeleton">
-                  <span className="cat_skel cat_skel_text" />
-                  <span className="cat_skel cat_skel_text cat_skel_short" />
-                  <span className="cat_skel cat_skel_text cat_skel_short" />
-                  <span className="cat_skel cat_skel_icon" />
-                </div>
-              ))}
-            </>
-          ) : filtradas.length === 0 ? (
-            <div className="cat_empty">No hay categorías para mostrar.</div>
-          ) : (
-            filtradas.map((c, index) => (
-              <div
-                key={c.id}
-                className="cat_row"
-                style={{ animationDelay: `${index * 0.06}s` }}
-              >
-                <div className="cat_cell cat_col_name" data-label="Nombre">
-                  {c.descripcion || '—'}
-                </div>
-
-                <div className="cat_cell cat_col_amount cat_center" data-label="Mensual">
-                  {fmtARS(c.monto_mensual)}
-                </div>
-
-                <div className="cat_cell cat_col_amount cat_center" data-label="Anual">
-                  {fmtARS(c.monto_anual)}
-                </div>
-
-                <div className="cat_cell cat_col_actions cat_right" data-label="Acciones">
-                  <button
-                    className="cat_icon_btn cat_icon_btn_history"
-                    onClick={() => abrirHistorial(c)}
-                    title="Historial de cambios"
-                    aria-label={`Ver historial de ${c.descripcion || 'categoría'}`}
-                  >
-                    <FontAwesomeIcon icon={faClockRotateLeft} />
-                  </button>
-
-                  <button
-                    className="cat_icon_btn"
-                    onClick={() => navigate(`/categorias/editar/${c.id}`)}
-                    title="Editar"
-                    aria-label={`Editar categoría ${c.descripcion || ''}`}
-                  >
-                    <FontAwesomeIcon icon={faEdit} />
-                  </button>
-
-                  <button
-                    className="cat_icon_btn cat_icon_btn_danger"
-                    onClick={() => pedirConfirmacionEliminar(c)}
-                    title="Eliminar"
-                    aria-label={`Eliminar categoría ${c.descripcion || ''}`}
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        <DescuentosFamiliaresPanel showToast={showToast} />
-
-        <section className="cat_toolbar">
+        <header className="cat_topbar">
           <button
             className="cat_btn cat_btn_primary cat_btn_back"
             onClick={() => navigate('/panel')}
@@ -476,7 +397,10 @@ const Categorias = () => {
             <span className="cat_btn_text">Volver</span>
           </button>
 
-          <div className="cat_toolbar_spacer" />
+          <div className="cat_title_block">
+            <h2 className="cat_title">Categorías</h2>
+            <p className="cat_subtitle">Montos mensuales, anuales y descuentos familiares.</p>
+          </div>
 
           <button
             className="cat_btn cat_btn_outline"
@@ -485,7 +409,95 @@ const Categorias = () => {
             <FontAwesomeIcon icon={faPlus} />
             <span className="cat_btn_text">Nueva</span>
           </button>
-        </section>
+        </header>
+
+        <main className="cat_layout">
+          <section className="cat_panel cat_panel_list">
+            <div className="cat_panel_head">
+              <div>
+                <h3>Listado de categorías</h3>
+                <span>{loading ? 'Cargando…' : `${filtradas.length} categorías cargadas`}</span>
+              </div>
+            </div>
+
+            <div className="cat_list_scroll">
+              <div className="cat_list">
+                <div className="cat_list_head">
+                  <div className="cat_col cat_col_name cat_head_cell">Nombre</div>
+                  <div className="cat_col cat_col_amount cat_head_cell cat_center">Mensual</div>
+                  <div className="cat_col cat_col_amount cat_head_cell cat_center">Anual</div>
+                  <div className="cat_col cat_col_actions cat_head_cell cat_right">Acciones</div>
+                </div>
+
+                {loading ? (
+                  <>
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="cat_row cat_row_skeleton">
+                        <span className="cat_skel cat_skel_text" />
+                        <span className="cat_skel cat_skel_text cat_skel_short" />
+                        <span className="cat_skel cat_skel_text cat_skel_short" />
+                        <span className="cat_skel cat_skel_icon" />
+                      </div>
+                    ))}
+                  </>
+                ) : filtradas.length === 0 ? (
+                  <div className="cat_empty">No hay categorías para mostrar.</div>
+                ) : (
+                  filtradas.map((c, index) => (
+                    <div
+                      key={c.id}
+                      className="cat_row"
+                      style={{ animationDelay: `${index * 0.06}s` }}
+                    >
+                      <div className="cat_cell cat_col_name" data-label="Nombre">
+                        {c.descripcion || '—'}
+                      </div>
+
+                      <div className="cat_cell cat_col_amount cat_center" data-label="Mensual">
+                        {fmtARS(c.monto_mensual)}
+                      </div>
+
+                      <div className="cat_cell cat_col_amount cat_center" data-label="Anual">
+                        {fmtARS(c.monto_anual)}
+                      </div>
+
+                      <div className="cat_cell cat_col_actions cat_right" data-label="Acciones">
+                        <button
+                          className="cat_icon_btn cat_icon_btn_history"
+                          onClick={() => abrirHistorial(c)}
+                          title="Historial de cambios"
+                          aria-label={`Ver historial de ${c.descripcion || 'categoría'}`}
+                        >
+                          <FontAwesomeIcon icon={faClockRotateLeft} />
+                        </button>
+
+                        <button
+                          className="cat_icon_btn"
+                          onClick={() => navigate(`/categorias/editar/${c.id}`)}
+                          title="Editar"
+                          aria-label={`Editar categoría ${c.descripcion || ''}`}
+                        >
+                          <FontAwesomeIcon icon={faEdit} />
+                        </button>
+
+                        <button
+                          className="cat_icon_btn cat_icon_btn_danger"
+                          onClick={() => pedirConfirmacionEliminar(c)}
+                          title="Eliminar"
+                          aria-label={`Eliminar categoría ${c.descripcion || ''}`}
+                        >
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </section>
+
+          <DescuentosFamiliaresPanel showToast={showToast} />
+        </main>
       </div>
 
       {/* ✅ Modal Historial (APARTE) */}
