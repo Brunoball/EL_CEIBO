@@ -16,7 +16,7 @@ const ModalCobradorAlumno = ({ mostrar, alumno, nuevoValor, onClose, onConfirm }
     const ap = (alumno?.apellido ?? "").trim();
     const no = (alumno?.nombre ?? "").trim();
     const armado = `${ap} ${no}`.trim();
-    return armado || `Alumno #${alumno?.id_alumno ?? "-"}`;
+    return armado || `Socio #${alumno?.id_alumno ?? "-"}`;
   }, [alumno]);
 
   if (!mostrar) return null;
@@ -64,15 +64,15 @@ const ModalCobradorAlumno = ({ mostrar, alumno, nuevoValor, onClose, onConfirm }
                   <span className="mi-label">Acción</span>
                   <span className="mi-value mi-value--multiline">
                     {esAsignar
-                      ? "El alumno pasará a ser visitado por el cobrador en su domicilio."
-                      : "El alumno dejará de ser visitado por el cobrador en su domicilio."}
+                      ? "El socio pasará a ser visitado por el cobrador en su domicilio."
+                      : "El socio dejará de ser visitado por el cobrador en su domicilio."}
                   </span>
                 </div>
 
                 <div className="mi-sep" />
 
                 <div className="mi-row">
-                  <span className="mi-label">Alumno</span>
+                  <span className="mi-label">Socio</span>
                   <span className="mi-value">{nombre}</span>
                 </div>
 

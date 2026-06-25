@@ -46,7 +46,7 @@ const ModalDarBajaAlumno = ({ mostrar, alumno, onClose, onDarBaja }) => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="alubaja-title"
-      onClick={onClose} // cerrar al hacer click fuera (comportamiento alumnos)
+      onClick={onClose} // cerrar al hacer click fuera (comportamiento socios)
     >
       <div
         className="empbaja-modal empbaja-modal--danger"
@@ -57,7 +57,7 @@ const ModalDarBajaAlumno = ({ mostrar, alumno, onClose, onDarBaja }) => {
         </div>
 
         <h3 id="alubaja-title" className="empbaja-modal__title">
-          Confirmar baja de alumno
+          Confirmar baja de socio
         </h3>
 
         <p className="empbaja-modal__body">

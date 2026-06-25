@@ -420,7 +420,7 @@ const Alumnos = () => {
           const dataListas = await resListas.json();
           if (dataListas?.exito && dataListas?.listas?.categorias) {
             const cats = (dataListas.listas.categorias || [])
-              .map(c => (c?.nombre ?? '').toString().trim())
+              .map(c => (c?.nombre_categoria ?? c?.nombre ?? c?.categoria ?? c?.descripcion ?? '').toString().trim())
               .filter(Boolean)
               .sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
             setCategoriasDisponibles(cats);
@@ -571,6 +571,15 @@ const Alumnos = () => {
 
   const construirDomicilio = useCallback((domicilio) => (domicilio || '').trim(), []);
 
+  const obtenerCategoria = useCallback((a = {}) => (
+    a?.categoria_nombre ||
+    a?.nombre_categoria ||
+    a?.catm_nombre ||
+    a?.categoria_monto_nombre ||
+    a?.nombre_categoria_monto ||
+    ''
+  ).toString().trim(), []);
+
   const exportarExcel = useCallback(() => {
     if (!puedeExportar) {
       mostrarToast('No hay filas visibles para exportar.', 'error');
@@ -589,7 +598,7 @@ const Alumnos = () => {
       'Fecha de ingreso': formatearFechaISO(a?.ingreso ?? ''),
       'Domicilio': construirDomicilio(a?.domicilio),
       'Localidad': a?.localidad ?? '',
-      'Categoría': a?.categoria_nombre ?? '',
+      'Categoría': obtenerCategoria(a),
       'Cobrador': Number(a?.es_cobrador ?? 0) === 1 ? 'SI' : 'NO',
     }));
 
@@ -619,7 +628,7 @@ const Alumnos = () => {
     const sufijo = filtroActivo === 'todos' ? 'Todos' : 'Filtrados';
     const fechaStr = `${yyyy}-${mm}-${dd}`;
     saveAs(blob, `Socios_${sufijo}_${fechaStr}(${filas.length}).xlsx`);
-  }, [puedeExportar, alumnosFiltrados, filtroActivo, mostrarToast, construirDomicilio]);
+  }, [puedeExportar, alumnosFiltrados, filtroActivo, mostrarToast, construirDomicilio, obtenerCategoria]);
 
   const handleMostrarTodos = useCallback(() => {
     setFiltros({
@@ -880,6 +889,9 @@ const Alumnos = () => {
         </div>
         <div className="alu-column alu-column-localidad" title={alumno.localidad}>
           {alumno.localidad}
+        </div>
+        <div className="alu-column alu-column-categoria" title={obtenerCategoria(alumno) || 'Sin categoría'}>
+          {obtenerCategoria(alumno) || '—'}
         </div>
 
         <div className="alu-column alu-icons-column">
@@ -1148,6 +1160,7 @@ const Alumnos = () => {
                 <div className="alu-column-header alu-header-dni">DNI</div>
                 <div className="alu-column-header alu-header-domicilio">Domicilio</div>
                 <div className="alu-column-header alu-header-localidad">Localidad</div>
+                <div className="alu-column-header alu-header-categoria">Categoría</div>
                 <div className="alu-column-header alu-icons-column">Acciones</div>
               </div>
 
@@ -1270,6 +1283,10 @@ const Alumnos = () => {
                         <div className="alu-card-row">
                           <span className="alu-card-label">Localidad</span>
                           <span className="alu-card-value">{alumno.localidad}</span>
+                        </div>
+                        <div className="alu-card-row">
+                          <span className="alu-card-label">Categoría</span>
+                          <span className="alu-card-value">{obtenerCategoria(alumno) || '—'}</span>
                         </div>
                       </div>
 

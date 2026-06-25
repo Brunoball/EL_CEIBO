@@ -55,7 +55,7 @@ try {
   $ids = array_values(array_unique($ids));
 
   if ($id_familia <= 0) fam_json(['exito' => false, 'mensaje' => 'id_familia inválido'], 400);
-  if (count($ids) === 0) fam_json(['exito' => false, 'mensaje' => 'No se recibieron alumnos'], 422);
+  if (count($ids) === 0) fam_json(['exito' => false, 'mensaje' => 'No se recibieron socios'], 422);
 
   $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 

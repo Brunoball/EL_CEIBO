@@ -32,8 +32,11 @@ try {
             a.apellido,
             a.nombre,
             a.ingreso,
-            a.motivo
+            a.motivo,
+            a.id_cat_monto,
+            cm.nombre_categoria AS categoria_nombre
         FROM alumnos a
+        LEFT JOIN categoria_monto cm ON cm.id_cat_monto = a.id_cat_monto
         /**WHERE**/
         ORDER BY a.id_alumno ASC
     ";

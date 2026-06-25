@@ -60,7 +60,7 @@ try {
     $pdo->rollBack();
     fam_json([
       'exito' => false,
-      'mensaje' => 'La familia tiene alumnos vinculados. Activá "Forzar borrado" para desvincularlos y eliminarla.',
+      'mensaje' => 'La familia tiene socios vinculados. Activá "Forzar borrado" para desvincularlos y eliminarla.',
       'miembros' => $cant,
     ], 409);
   }

@@ -120,7 +120,7 @@ const ModalInfoAlumno = ({ mostrar, alumno, onClose }) => {
         <div className="mi-modal__tabs">
           <button className={`mi-tab ${pestania === 'datos' ? 'is-active' : ''}`} onClick={() => setPestania('datos')}>Datos Generales</button>
           <button className={`mi-tab ${pestania === 'contacto' ? 'is-active' : ''}`} onClick={() => setPestania('contacto')}>Contacto</button>
-          <button className={`mi-tab ${pestania === 'academico' ? 'is-active' : ''}`} onClick={() => setPestania('academico')}>Académico</button>
+          <button className={`mi-tab ${pestania === 'academico' ? 'is-active' : ''}`} onClick={() => setPestania('academico')}>Cuota</button>
           <button className={`mi-tab ${pestania === 'observaciones' ? 'is-active' : ''}`} onClick={() => setPestania('observaciones')}>Observaciones</button>
         </div>
 
@@ -206,13 +206,13 @@ const ModalInfoAlumno = ({ mostrar, alumno, onClose }) => {
             <section className="mi-tabpanel is-active">
               <div className="mi-grid">
                 <article className="mi-card">
-                  <h3 className="mi-card__title">Cuota</h3>
+                  <h3 className="mi-card__title">Datos de cuota</h3>
                   <div className="mi-row">
-                    
+                    <span className="mi-label">Año</span>
                     <span className="mi-value">{texto(anio)}</span>
                   </div>
                   <div className="mi-row">
-                    
+                    <span className="mi-label">División</span>
                     <span className="mi-value">{texto(division)}</span>
                   </div>
                 </article>

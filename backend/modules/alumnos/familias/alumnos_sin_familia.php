@@ -85,7 +85,7 @@ try {
   error_log("alumnos_sin_familia ERROR: " . $e->getMessage());
   fam_json([
     'exito' => false,
-    'mensaje' => 'Error al listar alumnos sin familia',
+    'mensaje' => 'Error al listar socios sin familia',
     'error' => $e->getMessage(),
   ], 500);
 }

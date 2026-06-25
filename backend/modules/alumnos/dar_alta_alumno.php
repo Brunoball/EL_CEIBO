@@ -69,7 +69,7 @@ try {
         $chk->execute([':id' => $id_alumno]);
         if (!$chk->fetch()) {
             http_response_code(404);
-            echo json_encode(['exito' => false, 'mensaje' => 'Alumno no encontrado']);
+            echo json_encode(['exito' => false, 'mensaje' => 'Socio no encontrado']);
             exit;
         }
         // Existe pero sin cambios; lo tomamos como éxito igualmente
@@ -77,7 +77,7 @@ try {
 
     echo json_encode([
         'exito'       => true,
-        'mensaje'     => 'Alumno dado de alta correctamente',
+        'mensaje'     => 'Socio dado de alta correctamente',
         'fecha_usada' => $fechaUsar
     ], JSON_UNESCAPED_UNICODE);
     exit;

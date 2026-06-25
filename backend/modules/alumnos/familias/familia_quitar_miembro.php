@@ -53,7 +53,7 @@ try {
 
   if (!$row) {
     $pdo->rollBack();
-    fam_json(['exito' => false, 'mensaje' => 'El alumno no existe'], 404);
+    fam_json(['exito' => false, 'mensaje' => 'El socio no existe'], 404);
   }
 
   // Desvincular

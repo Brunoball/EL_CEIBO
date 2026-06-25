@@ -429,7 +429,7 @@ input:-webkit-autofill { background-color: transparent !important; }
 /* Header como grid */
 .alu-header {
   display: grid;
-  grid-template-columns: 1.5fr 0.8fr 1.2fr 1fr 0.7fr 0.7fr 0.8fr;
+  grid-template-columns: 1.45fr 0.75fr 1.15fr 1fr 0.95fr 0.9fr;
   background: var(--reg-primary);
   position: sticky; top: 0; z-index: 10; overflow: hidden; scrollbar-gutter: stable;
 }
@@ -467,7 +467,7 @@ input:-webkit-autofill { background-color: transparent !important; }
 /* Filas como grid */
 .alu-row {
   display: grid;
-  grid-template-columns: 1.5fr 0.8fr 1.2fr 1fr 0.7fr 0.7fr 0.8fr;
+  grid-template-columns: 1.45fr 0.75fr 1.15fr 1fr 0.95fr 0.9fr;
   align-items: center;
   padding: 0;
   position: relative;
@@ -490,6 +490,7 @@ input:-webkit-autofill { background-color: transparent !important; }
 .alu-column { text-align: center; padding: 12px 8px; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .alu-column-nombre { font-weight: 500; color: var(--text-primary); }
 .alu-column-dni { font-family: 'JetBrains Mono', monospace; }
+.alu-column-categoria { font-weight: 600; color: var(--reg-primary-dark); }
 
 .alu-icons-column { justify-content: center; padding: 0 !important; }
 .alu-icons-container { display: flex; gap: 0; align-items: center; justify-content: center !important; }

@@ -35,6 +35,11 @@ const normalizar = (str = "") =>
 const nombreApellido = (a = {}) =>
   `${(a.apellido || "").trim()} ${(a.nombre || "").trim()}`.trim();
 
+const categoriaSocio = (a = {}) =>
+  (a.categoria_nombre || a.nombre_categoria || a.catm_nombre || a.categoria || "")
+    .toString()
+    .trim();
+
 const formatearFecha = (val) => {
   if (!val) return "—";
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(val);
@@ -99,7 +104,9 @@ const AlumnoBaja = () => {
   const alumnosFiltrados = useMemo(() => {
     if (!busqueda) return alumnos;
     const q = normalizar(busqueda);
-    return alumnos.filter((a) => normalizar(nombreApellido(a)).includes(q));
+    return alumnos.filter((a) =>
+      normalizar(`${nombreApellido(a)} ${categoriaSocio(a)}`).includes(q)
+    );
   }, [alumnos, busqueda]);
 
   /* ============ Carga inicial ============ */
@@ -316,16 +323,17 @@ const AlumnoBaja = () => {
       const filas = alumnosFiltrados.map((a) => ({
         ID: a.id_alumno ?? "",
         "Apellido y Nombre": nombreApellido(a) || "",
+        Categoría: categoriaSocio(a) || "",
         "Fecha de Baja": toISODate(a.ingreso), // <-- YYYY-MM-DD
         Motivo: (a.motivo || "").toString().trim(),
       }));
 
       const ws = XLSX.utils.json_to_sheet(filas, {
-        header: ["ID", "Apellido y Nombre", "Fecha de Baja", "Motivo"],
+        header: ["ID", "Apellido y Nombre", "Categoría", "Fecha de Baja", "Motivo"],
         skipHeader: false,
       });
 
-      ws["!cols"] = [{ wch: 8 }, { wch: 32 }, { wch: 12 }, { wch: 40 }];
+      ws["!cols"] = [{ wch: 8 }, { wch: 32 }, { wch: 18 }, { wch: 12 }, { wch: 40 }];
 
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "SociosBaja");
@@ -434,7 +442,7 @@ const AlumnoBaja = () => {
         <div className="emp-baja-tabla-container">
           <div className="emp-baja-controles-superiores">
             <div className="emp-baja-contador">
-              Mostrando <strong>{alumnosFiltrados.length}</strong> alumnos
+              Mostrando <strong>{alumnosFiltrados.length}</strong> socios
             </div>
 
             {/* Acciones derecha: Exportar + Eliminar todos */}
@@ -452,7 +460,7 @@ const AlumnoBaja = () => {
               {!isVista && (
                 <button
                   className="emp-baja-eliminar-todos"
-                  title="Eliminar definitivamente todos los alumnos visibles"
+                  title="Eliminar definitivamente todos los socios visibles"
                   onClick={() => setMostrarConfirmacionEliminarTodos(true)}
                   disabled={alumnosFiltrados.length === 0}
                 >
@@ -467,6 +475,7 @@ const AlumnoBaja = () => {
             <div className="emp-baja-tabla-header">
               <div className="emp-baja-col-id">ID</div>
               <div className="emp-baja-col-nombre">Apellido y Nombre</div>
+              <div className="emp-baja-col-categoria">Categoría</div>
               <div className="emp-baja-col-fecha">Fecha de Baja</div>
               <div className="emp-baja-col-motivo">Motivo</div>
               <div className="emp-baja-col-acciones">Acciones</div>
@@ -485,6 +494,9 @@ const AlumnoBaja = () => {
                   <div className="emp-baja-col-id">{a.id_alumno}</div>
                   <div className="emp-baja-col-nombre">
                     {nombreApellido(a) || "—"}
+                  </div>
+                  <div className="emp-baja-col-categoria">
+                    {categoriaSocio(a) || "—"}
                   </div>
                   <div className="emp-baja-col-fecha">
                     {formatearFecha(a.ingreso)}
@@ -540,7 +552,7 @@ const AlumnoBaja = () => {
               id="modal-alta-alumno-title"
               className="emp-baja-modal__title emp-baja-modal__title--success"
             >
-              Reactivar alumno
+              Reactivar socio
             </h3>
             <p className="emp-baja-modal__body">
               ¿Deseás dar de alta nuevamente a{" "}
@@ -614,7 +626,7 @@ const AlumnoBaja = () => {
               Eliminar permanentemente
             </h3>
             <p className="emp-baja-modal__body">
-              ¿Eliminar definitivamente al alumno{" "}
+              ¿Eliminar definitivamente al socio{" "}
               <strong>{nombreApellido(alumnoAEliminar)}</strong>? Esta acción no
               se puede deshacer.
             </p>
@@ -663,7 +675,7 @@ const AlumnoBaja = () => {
               Eliminar permanentemente
             </h3>
             <p className="emp-baja-modal__body">
-              ¿Eliminar definitivamente <strong>todos</strong> los alumnos
+              ¿Eliminar definitivamente <strong>todos</strong> los socios
               actualmente visibles? Esta acción no se puede deshacer.
             </p>
             <div className="emp-baja-modal__actions">

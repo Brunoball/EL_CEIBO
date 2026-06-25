@@ -51,7 +51,7 @@ try {
     ]);
 
     if ($stmt->rowCount() === 0) {
-        // No encontró el alumno o ya estaba en ese estado
+        // No encontró el socio o ya estaba en ese estado
         echo json_encode([
             'exito'   => false,
             'mensaje' => 'No se actualizó ningún registro. Verificá el ID.'
@@ -61,7 +61,7 @@ try {
 
     echo json_encode([
         'exito'   => true,
-        'mensaje' => 'Alumno dado de baja correctamente',
+        'mensaje' => 'Socio dado de baja correctamente',
         'fecha'   => $fecha, // para que el front actualice sin re-consultar
     ], JSON_UNESCAPED_UNICODE);
 

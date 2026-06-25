@@ -44,7 +44,6 @@ import ChatOptionsMenu from "./ChatOptionsMenu";
 import EditNombreModal from "./modales/EditNombreModal";
 import EditEtiquetaModal from "./modales/EditEtiquetaModal";
 import ConfirmActionModal from "./modales/ConfirmActionModal";
-import ComprobanteRevisionModal from "./modales/ComprobanteRevisionModal";
 
 // ✅ NUEVO: modal galería
 import GaleriaModal from "./modales/GaleriaModal";
@@ -272,126 +271,9 @@ const fmtBytes = (n) => {
   return `${x.toFixed(i === 0 ? 0 : 1)} ${u[i]}`;
 };
 
-const parseMoneyInput = (value) => {
-  const raw = String(value ?? "").trim();
-  if (!raw) return null;
-
-  let s = raw.replace(/[^0-9,.]/g, "");
-  if (!s) return null;
-
-  const hasComma = s.includes(",");
-  const hasDot = s.includes(".");
-
-  if (hasComma && hasDot) {
-    s = s.replace(/\./g, "").replace(",", ".");
-  } else if (hasComma) {
-    const parts = s.split(",");
-    const last = parts[parts.length - 1] || "";
-    if (last.length === 2) s = s.replace(/\./g, "").replace(",", ".");
-    else s = s.replace(/,/g, "");
-  } else if (hasDot) {
-    const parts = s.split(".");
-    const last = parts[parts.length - 1] || "";
-    if (last.length === 3 && parts.length > 1) s = s.replace(/\./g, "");
-  }
-
-  const n = Number(s);
-  return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null;
-};
-
-
 /* =========================
    ✅ MODAL VISOR (IMG / PDF)
 ========================= */
-
-const fmtMoneyARS = (value, fallback = "Monto no detectado") => {
-  const n = Number(value);
-  if (!Number.isFinite(n) || n <= 0) return fallback;
-  return n.toLocaleString("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: n % 1 === 0 ? 0 : 2,
-    maximumFractionDigits: 2,
-  });
-};
-
-const firstText = (...values) => {
-  for (const value of values) {
-    if (value === null || value === undefined) continue;
-    if (typeof value === "object") continue;
-    const s = normStr(value);
-    if (s) return s;
-  }
-  return "";
-};
-
-const toNumberOrNull = (value) => {
-  if (value === null || value === undefined || value === "") return null;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
-};
-
-const cantidadExactaPorMonto = (monto, precioUnitario) => {
-  const montoNum = toNumberOrNull(monto);
-  const precioNum = toNumberOrNull(precioUnitario);
-  if (!montoNum || !precioNum || montoNum <= 0 || precioNum <= 0) return null;
-
-  const cantidad = Math.round(montoNum / precioNum);
-  if (!Number.isFinite(cantidad) || cantidad <= 0) return null;
-
-  const totalEsperado = Number((precioNum * cantidad).toFixed(2));
-  const diferencia = Math.abs(Number(montoNum.toFixed(2)) - totalEsperado);
-  return diferencia <= 0.01 ? cantidad : null;
-};
-
-const pickComprobanteInfo = (ev = {}) => {
-  const ctx = ev?.contexto && typeof ev.contexto === "object" ? ev.contexto : {};
-  const archivo = ctx?.archivo && typeof ctx.archivo === "object" ? ctx.archivo : {};
-  const archivoUrl = firstText(ctx.archivo_url, ctx.url_archivo, archivo.url);
-  const mediaTipo = firstText(ctx.media_tipo, ctx.mime, archivo.mime);
-  const nombre = firstText(ctx.nombre_apellido, ctx.persona_nombre, ctx.nombre, ctx.comprador_nombre);
-  const dni = firstText(ctx.dni, ctx.persona_dni, ctx.comprador_dni);
-  const producto = firstText(ctx.producto_nombre, ctx.campania?.producto_nombre, ctx.producto);
-  const campania = firstText(ctx.campania_nombre, ctx.campania?.campania_nombre, ctx.venta, ctx.campania);
-  const monto = ctx.monto_detectado ?? ctx.monto_confirmado ?? ctx.monto ?? null;
-  const precioUnitario = ctx.precio_unitario ?? ctx.producto_precio ?? null;
-  const cantidadExacta = cantidadExactaPorMonto(monto, precioUnitario);
-  const cantidad = ctx.cantidad_estimada ?? ctx.cantidad_confirmada ?? ctx.cantidad_sugerida ?? cantidadExacta ?? null;
-  const estadoComprobante = firstText(ctx.estado_comprobante, ctx.estado);
-
-  // Algunos eventos viejos quedaron guardados con motivo_revision cuando el OCR había
-  // leído mal el monto. Si después el backend corrige a $12.000 y 1 entrada, no hay
-  // que seguir mostrando el cartel amarillo de “no coincide”.
-  const motivoRevisionRaw = firstText(ctx.motivo_revision, ctx.advertencia);
-  const motivoRevision = cantidadExacta ? "" : motivoRevisionRaw;
-
-  return {
-    id: Number(ctx.id_comprobante || 0),
-    archivoUrl,
-    mediaTipo,
-    nombre,
-    dni,
-    producto,
-    campania,
-    monto,
-    cantidad,
-    precioUnitario,
-    estadoComprobante,
-    motivoRevision,
-  };
-};
-
-const isImageComprobante = (url = "", mime = "") => {
-  const m = String(mime || "").toLowerCase();
-  const u = String(url || "").toLowerCase().split("?")[0];
-  return m.startsWith("image/") || /\.(png|jpe?g|webp|gif)$/i.test(u);
-};
-
-const isPdfComprobante = (url = "", mime = "") => {
-  const m = String(mime || "").toLowerCase();
-  const u = String(url || "").toLowerCase().split("?")[0];
-  return m === "application/pdf" || u.endsWith(".pdf");
-};
 
 const BotEventosModal = ({
   open,
@@ -404,8 +286,6 @@ const BotEventosModal = ({
   onMarkOne,
   onDeleteOne,
   onOpenChat,
-  onAprobarComprobante,
-  onRechazarComprobante,
 }) => {
   useModalEscapeStack(open, onClose);
 
@@ -448,7 +328,7 @@ const BotEventosModal = ({
         <div className="wp-events-actions">
           <div className="wp-events-actions-copy">
             <b>Centro de seguimiento</b>
-            <span>Revisá errores, advertencias y comprobantes pendientes.</span>
+            <span>Revisá errores y advertencias pendientes.</span>
           </div>
           <button type="button" className="wp-events-btn" onClick={onRefresh} disabled={loading}>
             {loading ? <FontAwesomeIcon icon={faSpinner} spin /> : null}
@@ -485,69 +365,17 @@ const BotEventosModal = ({
           {hasEventos ? eventos.map((ev) => {
             const pendiente = ev.estado === "pendiente";
             const tipo = String(ev.tipo || "error");
-            const ctx = ev.contexto && typeof ev.contexto === "object" ? ev.contexto : {};
-            const idComprobante = Number(ctx?.id_comprobante || 0);
-            const esComprobanteVenta = String(ev.modulo || "") === "ventas_comprobante" && idComprobante > 0;
-            const comp = esComprobanteVenta ? pickComprobanteInfo(ev) : null;
-            const compArchivoUrl = comp?.archivoUrl || "";
-            const compEsImagen = isImageComprobante(compArchivoUrl, comp?.mediaTipo);
-            const compEsPdf = isPdfComprobante(compArchivoUrl, comp?.mediaTipo);
-            const compPersona = comp?.nombre || "Persona sin nombre detectado";
-            const compDni = comp?.dni || "sin DNI";
-            const compMonto = fmtMoneyARS(comp?.monto);
-            const compCantidad = Number(comp?.cantidad || 0) > 0 ? `${Number(comp?.cantidad)} entrada${Number(comp?.cantidad) === 1 ? "" : "s"}` : "Cantidad a revisar";
-            const compVenta = [comp?.campania, comp?.producto].filter(Boolean).join(" · ");
 
             return (
               <div key={ev.id_evento} className={`wp-event-card wp-event-card--${tipo} ${pendiente ? "is-pending" : "is-reviewed"}`}>
                 <div className="wp-event-top">
                   <span className="wp-event-badge">{tipo}</span>
-                                    <span className="wp-event-date">{fmtFechaEvento(ev.creado_en)}</span>
+                  <span className="wp-event-date">{fmtFechaEvento(ev.creado_en)}</span>
                 </div>
 
                 <div className="wp-event-title">{ev.titulo || "Evento del bot"}</div>
 
-                {esComprobanteVenta ? (
-                  <div className="wp-event-comprobante">
-                    {compArchivoUrl ? (
-                      <a
-                        className="wp-event-comprobante-preview"
-                        href={compArchivoUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Abrir comprobante recibido"
-                      >
-                        {compEsImagen ? (
-                          <img src={compArchivoUrl} alt={`Comprobante ${idComprobante}`} loading="lazy" />
-                        ) : (
-                          <span className="wp-event-comprobante-file">{compEsPdf ? "PDF" : "Archivo"}</span>
-                        )}
-                      </a>
-                    ) : (
-                      <div className="wp-event-comprobante-preview is-empty">Sin archivo</div>
-                    )}
-
-                    <div className="wp-event-comprobante-info">
-                      <div className="wp-event-comprobante-title">Comprobante #{idComprobante}</div>
-                      <div className="wp-event-comprobante-person">
-                        <b>{compPersona}</b>
-                        <span>DNI: {compDni}</span>
-                      </div>
-
-                      {compVenta ? <div className="wp-event-comprobante-desc">{compVenta}</div> : null}
-
-                      <div className="wp-event-comprobante-chips">
-                        <span>{compMonto}</span>
-                        <span>{compCantidad}</span>
-                        {comp?.precioUnitario ? <span>Precio: {fmtMoneyARS(comp.precioUnitario, "-")}</span> : null}
-                      </div>
-
-                      {comp?.motivoRevision ? (
-                        <div className="wp-event-comprobante-warning">{comp.motivoRevision}</div>
-                      ) : null}
-                    </div>
-                  </div>
-                ) : ev.detalle ? (
+                {ev.detalle ? (
                   <div className="wp-event-detail">{ev.detalle}</div>
                 ) : null}
 
@@ -558,51 +386,16 @@ const BotEventosModal = ({
                     </button>
                   ) : <span>Sin contacto asociado</span>}
                   <span>Estado: <b>{pendiente ? "pendiente" : "revisado"}</b></span>
-                  {esComprobanteVenta && compArchivoUrl ? (
-                    <a className="wp-event-link" href={compArchivoUrl} target="_blank" rel="noreferrer">
-                      Ver comprobante
-                    </a>
-                  ) : null}
                 </div>
 
                 {pendiente ? (
                   <div className="wp-event-foot">
-                    {esComprobanteVenta ? (
-                      <>
-                        <button
-                          type="button"
-                          className="wp-events-btn wp-events-btn--approve"
-                          onClick={() => onAprobarComprobante?.(idComprobante, ev.id_evento)}
-                        >
-                          Aprobar comprobante
-                        </button>
-                        <button
-                          type="button"
-                          className="wp-events-btn wp-events-btn--reject"
-                          onClick={() => onRechazarComprobante?.(idComprobante, ev.id_evento)}
-                        >
-                          Rechazar
-                        </button>
-                        <button
-                          type="button"
-                          className="wp-events-btn wp-events-btn--delete"
-                          onClick={() => onDeleteOne?.(ev.id_evento)}
-                          title="Ocultar sin aprobar, rechazar ni enviar mensajes"
-                        >
-                          Eliminar alerta
-                        </button>
-                      </>
-                    ) : null}
-                    {!esComprobanteVenta ? (
-                      <>
-                        <button type="button" className="wp-events-btn wp-events-btn--ok" onClick={() => onMarkOne?.(ev.id_evento)}>
-                          Marcar revisado
-                        </button>
-                        <button type="button" className="wp-events-btn wp-events-btn--delete" onClick={() => onDeleteOne?.(ev.id_evento)}>
-                          Eliminar
-                        </button>
-                      </>
-                    ) : null}
+                    <button type="button" className="wp-events-btn wp-events-btn--ok" onClick={() => onMarkOne?.(ev.id_evento)}>
+                      Marcar revisado
+                    </button>
+                    <button type="button" className="wp-events-btn wp-events-btn--delete" onClick={() => onDeleteOne?.(ev.id_evento)}>
+                      Eliminar
+                    </button>
                   </div>
                 ) : null}
               </div>
@@ -713,20 +506,6 @@ const BotPanel = () => {
   });
   const [loadingEventos, setLoadingEventos] = useState(false);
   const [errorEventos, setErrorEventos] = useState("");
-
-  const [comprobanteConfirm, setComprobanteConfirm] = useState({
-    open: false,
-    accion: "",
-    idComprobante: 0,
-    idEvento: 0,
-    motivo: "",
-    montoManual: "",
-    cantidadManual: "",
-    detalle: null,
-    loadingDetalle: false,
-  });
-  const [comprobanteConfirmLoading, setComprobanteConfirmLoading] = useState(false);
-  const [comprobanteConfirmError, setComprobanteConfirmError] = useState("");
 
   const [draft, setDraft] = useState("");
   const [mode, setMode] = useState("bot");
@@ -1022,22 +801,16 @@ const BotPanel = () => {
           const consultasPendientes = Number(
             c.consultas_pendientes || c.pending_consultas || 0
           );
-          const comprobantesPendientes = Number(
-            c.comprobantes_pendientes || c.pending_comprobantes || 0
-          );
 
           const chatTone =
             consultasPendientes > 0
               ? "consulta"
-              : comprobantesPendientes > 0
-                ? "comprobante"
-                : prioridad === "alta"
-                  ? "danger"
-                  : "normal";
+              : prioridad === "alta"
+                ? "danger"
+                : "normal";
 
           const urgente =
             consultasPendientes > 0 ||
-            comprobantesPendientes > 0 ||
             (modo === "manual" && unread > 0) ||
             prioridad === "alta";
 
@@ -1059,7 +832,6 @@ const BotPanel = () => {
             modo,
             urgente,
             consultasPendientes,
-            comprobantesPendientes,
             chatTone,
           };
         });
@@ -1147,162 +919,6 @@ const BotPanel = () => {
     setViewerOpen(false);
     setViewerItem(null);
   };
-
-  const abrirConfirmacionComprobante = useCallback((accion, idComprobante = 0, idEvento = 0) => {
-    const tipo = accion === "rechazar" ? "rechazar" : "aprobar";
-    const baseState = {
-      open: true,
-      accion: tipo,
-      idComprobante: Number(idComprobante || 0),
-      idEvento: Number(idEvento || 0),
-      motivo: "",
-      montoManual: "",
-      cantidadManual: "",
-      detalle: null,
-      loadingDetalle: true,
-    };
-
-    setComprobanteConfirm(baseState);
-    setComprobanteConfirmError("");
-
-    (async () => {
-      try {
-        const { res, data } = await postJSON(`${PANEL_API}/panel_ventas_comprobante_transferencia.php`, {
-          accion: "detalle_comprobante",
-          id_comprobante: Number(idComprobante || 0),
-          id_evento: Number(idEvento || 0),
-        });
-
-        if (!res.ok || !data?.success) {
-          throw new Error(data?.error || `Error HTTP ${res.status}`);
-        }
-
-        const cantidad = Number(data?.cantidad_sugerida || data?.cantidad_estimada || 1);
-        const monto = data?.monto_detectado ?? data?.monto_confirmado ?? "";
-
-        setComprobanteConfirm((prev) => {
-          if (!prev.open || Number(prev.idComprobante || 0) !== Number(idComprobante || 0)) return prev;
-          return {
-            ...prev,
-            detalle: data,
-            loadingDetalle: false,
-            cantidadManual: cantidad > 0 ? String(cantidad) : "1",
-            montoManual: monto !== "" && monto !== null && monto !== undefined ? String(monto) : "",
-          };
-        });
-      } catch (e) {
-        const msg = e?.message || "No se pudo cargar el detalle del comprobante.";
-        setComprobanteConfirm((prev) => {
-          if (!prev.open || Number(prev.idComprobante || 0) !== Number(idComprobante || 0)) return prev;
-          return { ...prev, loadingDetalle: false };
-        });
-        setComprobanteConfirmError(msg);
-      }
-    })();
-  }, [postJSON]);
-
-  const cerrarConfirmacionComprobante = useCallback(() => {
-    if (comprobanteConfirmLoading) return;
-    setComprobanteConfirm({
-      open: false,
-      accion: "",
-      idComprobante: 0,
-      idEvento: 0,
-      motivo: "",
-      montoManual: "",
-      cantidadManual: "",
-      detalle: null,
-      loadingDetalle: false,
-    });
-    setComprobanteConfirmError("");
-  }, [comprobanteConfirmLoading]);
-
-  const ejecutarAccionComprobante = useCallback(
-    async () => {
-      const accion = comprobanteConfirm.accion === "rechazar" ? "rechazar" : "aprobar";
-      const idComprobante = Number(comprobanteConfirm.idComprobante || 0);
-      const idEvento = Number(comprobanteConfirm.idEvento || 0);
-
-      if (idComprobante <= 0) {
-        setComprobanteConfirmError("Falta el comprobante a procesar.");
-        return;
-      }
-
-      const payload = {
-        accion: accion === "rechazar" ? "rechazar_comprobante" : "aprobar_comprobante",
-        id_comprobante: idComprobante,
-        id_evento: idEvento,
-      };
-
-      if (accion === "rechazar") {
-        payload.motivo = String(comprobanteConfirm.motivo || "").trim();
-      } else {
-        const cantidadManual = Number.parseInt(String(comprobanteConfirm.cantidadManual || ""), 10);
-        const montoManual = parseMoneyInput(comprobanteConfirm.montoManual);
-
-        if (!Number.isFinite(cantidadManual) || cantidadManual <= 0) {
-          setComprobanteConfirmError("Ingresá una cantidad de entradas válida.");
-          return;
-        }
-
-        payload.cantidad_manual = cantidadManual;
-        if (montoManual !== null) payload.monto_manual = montoManual;
-      }
-
-      try {
-        setComprobanteConfirmLoading(true);
-        setLoadingEventos(true);
-        setErrorEventos("");
-        setComprobanteConfirmError("");
-
-        const { res, data } = await postJSON(`${PANEL_API}/panel_ventas_comprobante_transferencia.php`, payload);
-
-        if (!res.ok || !data?.success) {
-          throw new Error(data?.error || `Error HTTP ${res.status}`);
-        }
-
-        setComprobanteConfirm({
-          open: false,
-          accion: "",
-          idComprobante: 0,
-          idEvento: 0,
-          motivo: "",
-          montoManual: "",
-          cantidadManual: "",
-          detalle: null,
-          loadingDetalle: false,
-        });
-        await fetchEventos(true);
-        await fetchChats(true);
-      } catch (e) {
-        const msg = e?.message || (comprobanteConfirm.accion === "rechazar" ? "No se pudo rechazar el comprobante" : "No se pudo aprobar el comprobante");
-        setComprobanteConfirmError(msg);
-        setErrorEventos(msg);
-      } finally {
-        setComprobanteConfirmLoading(false);
-        setLoadingEventos(false);
-      }
-    },
-    [comprobanteConfirm, postJSON, fetchEventos, fetchChats]
-  );
-
-  const setCampoComprobanteConfirm = useCallback((campo, valor) => {
-    setComprobanteConfirm((prev) => ({ ...prev, [campo]: valor }));
-  }, []);
-
-  const aprobarComprobanteVenta = useCallback(
-    (idComprobante = 0, idEvento = 0) => {
-      abrirConfirmacionComprobante("aprobar", idComprobante, idEvento);
-    },
-    [abrirConfirmacionComprobante]
-  );
-
-  const rechazarComprobanteVenta = useCallback(
-    (idComprobante = 0, idEvento = 0) => {
-      abrirConfirmacionComprobante("rechazar", idComprobante, idEvento);
-    },
-    [abrirConfirmacionComprobante]
-  );
 
   const abrirPanelAlertas = useCallback(() => {
     setEventosOpen(true);
@@ -2050,7 +1666,7 @@ const BotPanel = () => {
                   unread: Number(data.unread || 1),
                   urgente:
                     Number(data.unread || 1) > 0 &&
-                    (c.modo === "manual" || c.prioridad === "alta" || Number(c.consultasPendientes || 0) > 0 || Number(c.comprobantesPendientes || 0) > 0),
+                    (c.modo === "manual" || c.prioridad === "alta" || Number(c.consultasPendientes || 0) > 0),
                 }
               : c
           )
@@ -2077,7 +1693,7 @@ const BotPanel = () => {
             ? {
                 ...c,
                 unread: 0,
-                urgente: Number(c.consultasPendientes || 0) > 0 || Number(c.comprobantesPendientes || 0) > 0 || c.prioridad === "alta",
+                urgente: Number(c.consultasPendientes || 0) > 0 || c.prioridad === "alta",
               }
             : c
         )
@@ -2410,14 +2026,11 @@ const BotPanel = () => {
             const fechaHoraTitle = fmtFechaHoraCompleta(c.updatedAt || Date.now());
             const totalTxt = `${Number(c.total || 0)} msgs`;
             const urgent = !!c.urgente;
-            const comprobantesPendientes = Number(c.comprobantesPendientes || 0);
             const tone = c.chatTone || (Number(c.consultasPendientes || 0) > 0
               ? "consulta"
-              : comprobantesPendientes > 0
-                ? "comprobante"
-                : c.prioridad === "alta"
-                  ? "danger"
-                  : "normal");
+              : c.prioridad === "alta"
+                ? "danger"
+                : "normal");
             const toneClass = tone !== "normal" ? `wp-chatitem--${tone}` : "";
 
             return (
@@ -2440,11 +2053,6 @@ const BotPanel = () => {
                           • CONSULTA
                         </span>
                       ) : null}
-                      {comprobantesPendientes > 0 ? (
-                        <span className="wp-comprobante-flag">
-                          • COMPROBANTE
-                        </span>
-                      ) : null}
                       {c.online ? (
                         <span className="wp-online" title="En línea" aria-hidden="true">
                           <FontAwesomeIcon icon={faCircle} />
@@ -2458,7 +2066,7 @@ const BotPanel = () => {
                   <div className="wp-chatrow">
                     <div className="wp-chatlast">
                       {c.id} • {totalTxt}
-                      {comprobantesPendientes > 0 ? " • 🧾 comprobante" : c.prioridad === "alta" && Number(c.consultasPendientes || 0) === 0 ? " • ⚠️" : ""}
+                      {c.prioridad === "alta" && Number(c.consultasPendientes || 0) === 0 ? " • ⚠️" : ""}
                       {c.modo === "manual" ? " • ✋ manual" : ""}
                     </div>
 
@@ -2468,11 +2076,9 @@ const BotPanel = () => {
                         title={
                           tone === "consulta"
                             ? "Consulta manual pendiente"
-                            : tone === "comprobante"
-                              ? "Comprobante pendiente"
-                              : tone === "danger"
-                                ? "Alerta importante"
-                                : "Mensajes sin ver"
+                            : tone === "danger"
+                              ? "Alerta importante"
+                              : "Mensajes sin ver"
                         }
                       >
                         {c.unread > 99 ? "99+" : c.unread}
@@ -2669,28 +2275,14 @@ const BotPanel = () => {
 
                 const side = mapEmisorToSide(m.emisor);
 
-                const notificationType = String(m.notificacion_tipo || "normal").toLowerCase();
                 const prioridadMsg = String(m.prioridad || "normal").toLowerCase();
-                const isComprobanteNotification =
-                  notificationType.startsWith("comprobante") ||
-                  prioridadMsg === "aprobacion_comprobante" ||
-                  prioridadMsg === "comprobante_aprobado" ||
-                  prioridadMsg === "comprobante_rechazado";
-                const comprobanteLabel =
-                  notificationType === "comprobante_rechazado" || prioridadMsg === "comprobante_rechazado"
-                    ? "Comprobante"
-                    : notificationType === "comprobante_aprobado" || prioridadMsg === "comprobante_aprobado"
-                      ? "Comprobante"
-                      : "Comprobante";
-
                 const isPendingConsult =
-                  !isComprobanteNotification &&
                   m.es_consulta === true &&
                   m.consulta_atendida === false;
 
                 const danger =
                   String(m.text || "").startsWith("ERROR") ||
-                  (prioridadMsg === "alta" && !isPendingConsult && !isComprobanteNotification);
+                  (prioridadMsg === "alta" && !isPendingConsult);
 
                 const hasMedia = !!m.media_url;
                 const mime =
@@ -2710,7 +2302,7 @@ const BotPanel = () => {
                       <div
                         className={`wp-bubble ${danger ? "wp-bubble--danger" : ""} ${
                           isPendingConsult ? "wp-bubble--consulta" : ""
-                        } ${isComprobanteNotification ? "wp-bubble--comprobante" : ""}`}
+                        }`}
                       >
                         {isPendingConsult ? (
                           <button
@@ -2726,19 +2318,6 @@ const BotPanel = () => {
                           </button>
                         ) : null}
 
-                        {isComprobanteNotification ? (
-                          <button
-                            type="button"
-                            className="wp-comprobante-pill"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              abrirPanelAlertas();
-                            }}
-                            title="Ver comprobantes pendientes"
-                          >
-                            🧾 {comprobanteLabel}
-                          </button>
-                        ) : null}
                         
                         {hasMedia ? (
                           <div className="wp-media-inbubble">
@@ -3012,27 +2591,10 @@ const BotPanel = () => {
         onRefresh={() => fetchEventos(false)}
         onMarkOne={(idEvento) => marcarEventoRevisado(idEvento)}
         onDeleteOne={(idEvento) => openEliminarAlerta(idEvento)}
-        onAprobarComprobante={(idComprobante, idEvento) => aprobarComprobanteVenta(idComprobante, idEvento)}
-        onRechazarComprobante={(idComprobante, idEvento) => rechazarComprobanteVenta(idComprobante, idEvento)}
         onOpenChat={(waId) => {
           setEventosOpen(false);
           openChat(waId);
         }}
-      />
-
-      <ComprobanteRevisionModal
-        open={comprobanteConfirm.open}
-        accion={comprobanteConfirm.accion}
-        detalle={comprobanteConfirm.detalle}
-        loadingDetalle={comprobanteConfirm.loadingDetalle}
-        motivo={comprobanteConfirm.motivo}
-        montoManual={comprobanteConfirm.montoManual}
-        cantidadManual={comprobanteConfirm.cantidadManual}
-        loading={comprobanteConfirmLoading}
-        error={comprobanteConfirmError}
-        onChangeCampo={setCampoComprobanteConfirm}
-        onClose={cerrarConfirmacionComprobante}
-        onConfirm={ejecutarAccionComprobante}
       />
 
       <GaleriaModal

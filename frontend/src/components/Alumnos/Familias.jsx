@@ -55,7 +55,7 @@ function ConfirmDeleteFamiliaModal({ open, familia, isDeleting, onConfirm, onCan
         <label className={`modalmi-selectable famdel-check-mini ${forzar ? 'is-checked' : ''}`} title="Forzar borrado">
           <input type="checkbox" checked={forzar} onChange={(e) => setForzar(e.target.checked)} disabled={isDeleting} />
           <div className="modalmi-checkslot" aria-hidden="true" />
-          <span className="famdel-check-mini-text">Forzar borrado (desvincula alumnos y elimina la familia)</span>
+          <span className="famdel-check-mini-text">Forzar borrado (desvincula socios y elimina la familia)</span>
         </label>
         <div className="famdel-modal-buttons">
           <button className="famdel-btn famdel-btn--ghost" onClick={onCancel} disabled={isDeleting}>Cancelar</button>
@@ -121,7 +121,7 @@ function buildWorkbookFamiliasYMiembros({ familias = [], miembrosMap = new Map()
       memberRows.push({
         "ID Familia": f.id_familia,
         "Familia": familiaNombre,
-        "Alumno": m.nombre || "—",
+        "Socio": m.nombre || "—",
         "DNI": m.dni || "—",
         "Localidad": m.localidad || "—",
         "Activo": Number(m.activo ?? 1) === 1 ? "Sí" : "No",
@@ -132,7 +132,7 @@ function buildWorkbookFamiliasYMiembros({ familias = [], miembrosMap = new Map()
       memberRows.push({
         "ID Familia": f.id_familia,
         "Familia": familiaNombre,
-        "Alumno": "—",
+        "Socio": "—",
         "DNI": "—",
         "Localidad": "—",
         "Activo": "—",

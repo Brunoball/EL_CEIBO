@@ -40,7 +40,7 @@ const ModalEliminarAlumno = ({ mostrar, alumno, onClose, onEliminar }) => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="aludel-title"
-      onClick={onClose} // conservar cierre por click fuera (comportamiento alumnos)
+      onClick={onClose} // conservar cierre por click fuera (comportamiento socios)
     >
       <div
         className="empdel-modal empdel-modal--danger"
@@ -55,7 +55,7 @@ const ModalEliminarAlumno = ({ mostrar, alumno, onClose, onEliminar }) => {
         </h3>
 
         <p className="empdel-modal__body">
-          ¿Deseás eliminar a <strong>{nombreMostrado}</strong>? Esta acción no se
+          ¿Deseás eliminar al socio <strong>{nombreMostrado}</strong>? Esta acción no se
           puede deshacer.
         </p>
 

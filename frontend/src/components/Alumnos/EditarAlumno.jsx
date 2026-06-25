@@ -84,7 +84,7 @@ const EditarAlumno = () => {
         showToast('Error al cargar listas: ' + (jsonListas.mensaje || ''), 'error');
       }
 
-      // Datos del alumno
+      // Datos del socio
       const response = await fetch(`${BASE_URL}/api.php?action=editar_alumno&id=${encodeURIComponent(id)}`, { signal });
       const data = await response.json();
 
@@ -103,7 +103,7 @@ const EditarAlumno = () => {
         setIngreso(a.ingreso || '');
         setObservaciones(a.observaciones || '');
       } else {
-        showToast('Error al cargar datos del alumno: ' + (data.mensaje || ''), 'error');
+        showToast('Error al cargar datos del socio: ' + (data.mensaje || ''), 'error');
       }
     } catch (error) {
       if (error.name !== 'AbortError') {

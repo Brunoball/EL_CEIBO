@@ -2000,23 +2000,11 @@
   .wp-tag-filter-menu{ animation: none; }
 }
 
-/* Estados visuales diferenciados: consulta manual / aprobación comprobante / alerta */
-.wp-comprobante-flag{
-  margin-left:8px;
-  color:#60a5fa;
-  font-size:11px;
-  font-weight:900;
-  letter-spacing:.02em;
-}
+/* Estados visuales diferenciados: consulta manual / alerta */
 .wp-chatitem.wp-chatitem--consulta{
   border:1px solid rgba(245,158,11,.80);
   box-shadow:0 0 0 1px rgba(245,158,11,.35) inset;
   background:rgba(245,158,11,.08);
-}
-.wp-chatitem.wp-chatitem--comprobante{
-  border:1px solid rgba(37,99,235,.85);
-  box-shadow:0 0 0 1px rgba(37,99,235,.35) inset;
-  background:rgba(37,99,235,.08);
 }
 .wp-chatitem.wp-chatitem--danger{
   border:1px solid rgba(220,38,38,.80);
@@ -2028,53 +2016,15 @@
   color:#1f2937;
   box-shadow:0 0 0 2px rgba(245,158,11,.25);
 }
-.wp-unread--comprobante{
-  background:#2563eb;
-  color:#fff;
-  box-shadow:0 0 0 2px rgba(37,99,235,.25);
-}
 .wp-unread--danger{
   background:#dc2626;
   color:#fff;
   box-shadow:0 0 0 2px rgba(220,38,38,.25);
 }
-.wp-bubble--comprobante{
-  border:1px solid rgba(59,130,246,.58) !important;
-  background:rgba(59,130,246,.12) !important;
-  box-shadow:0 0 0 1px rgba(59,130,246,.16) inset;
-}
-.wp-comprobante-pill{
-  width:max-content;
-  max-width:100%;
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  margin:0 0 8px;
-  padding:6px 9px;
-  border:1px solid rgba(59,130,246,.34);
-  border-radius:999px;
-  background:rgba(59,130,246,.16);
-  color:#bfdbfe;
-  font-size:12px;
-  font-weight:900;
-  cursor:pointer;
-}
 .wp-bubble--danger{
   border:1px solid rgba(239,68,68,.55) !important;
   background:rgba(239,68,68,.12) !important;
   box-shadow:0 0 0 1px rgba(239,68,68,.14) inset;
-}
-:root[data-botpanel-theme="light"] .wp-comprobante-flag{
-  color:#1d4ed8;
-}
-:root[data-botpanel-theme="light"] .wp-bubble--comprobante{
-  background:#bfdbfe !important;
-  border-color:rgba(37,99,235,.30) !important;
-}
-:root[data-botpanel-theme="light"] .wp-comprobante-pill{
-  background:#60a5fa;
-  border-color:rgba(37,99,235,.25);
-  color:#1d4ed8;
 }
 :root[data-botpanel-theme="light"] .wp-bubble--danger{
   background:#fecaca !important;

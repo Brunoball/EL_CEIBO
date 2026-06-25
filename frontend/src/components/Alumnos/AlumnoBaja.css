@@ -205,7 +205,7 @@
 /* Header */
 .emp-baja-tabla-header{
   display:grid; border-radius:14px 14px 0 0;
-  grid-template-columns:60px 1.5fr .8fr 1.5fr .5fr;
+  grid-template-columns:60px 1.35fr .8fr .85fr 1.4fr .55fr;
   background:var(--grayprincipal-700);
   color:var(--text-on-primary); font-weight:700; font-size:.9rem;
   padding:12px 0; position:sticky; top:0; z-index:2;
@@ -218,7 +218,7 @@
 /* Filas */
 .emp-baja-fila{
   display:grid;
-  grid-template-columns:60px 1.5fr .8fr 1.5fr .5fr;
+  grid-template-columns:60px 1.35fr .8fr .85fr 1.4fr .55fr;
   padding:10px 0; border-bottom:1px solid var(--border-color);
   align-items:center; background:#fff; font-size:.9rem;
 }
@@ -344,7 +344,7 @@
   .emp-baja-titulo{ font-size:1.6rem; }
   /* Mantener 5 columnas con proporciones más cómodas */
   .emp-baja-tabla-header, .emp-baja-fila{
-    grid-template-columns:60px 1.5fr .9fr 1.2fr .6fr;
+    grid-template-columns:60px 1.35fr .8fr .9fr 1.2fr .6fr;
   }
 }
 
@@ -375,7 +375,8 @@
 
   .emp-baja-col-id::before{ content:"ID"; }
   .emp-baja-col-nombre::before{ content:"Nombre"; }
-  .emp-baja-col-fecha::before{ content:"Ingreso"; }
+  .emp-baja-col-categoria::before{ content:"Categoría"; }
+  .emp-baja-col-fecha::before{ content:"Fecha de baja"; }
   .emp-baja-col-motivo::before{ content:"Motivo"; }
   .emp-baja-col-acciones::before{ content:"Acciones"; }
 
