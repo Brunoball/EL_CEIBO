@@ -1,47 +1,52 @@
-// src/utils/ComprobanteAlumnoPDF.js
+// src/utils/ComprobanteExternoPDF.jsx
 import BASE_URL from '../config/config';
 
 /**
- * Genera un PDF con un único comprobante para el alumno (descarga directa).
+ * Genera un PDF con un comprobante individual para el socio.
+ * Diseño adaptado a club: no muestra curso ni división.
  * Usa html2canvas + jsPDF desde CDN.
  */
 export async function generarComprobanteAlumnoPDF(alumno, opts = {}) {
-  // Helpers
-  const NORMALIZAR = (s = '') => String(s || '').trim();
+  const NOMBRE_CLUB = 'CLUB DEPORTIVO EL CEIBO';
+
+  const NORMALIZAR = (s = '') => String(s ?? '').trim();
   const UPPER = (s = '') => NORMALIZAR(s).toUpperCase();
+  const escapeHtml = (value = '') => String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 
   const nombreMes = (idMes) => {
     const m = ['', 'Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
     const i = Number(idMes);
-    return m[i] || String(idMes || '');
+    if (i >= 1 && i <= 12) return m[i];
+    if (i === 13) return 'Contado anual';
+    if (i === 15) return '1er mitad';
+    if (i === 16) return '2da mitad';
+    return String(idMes || '');
   };
 
   const getIdAlumno = (s) => s?.id_alumno ?? s?.id ?? s?.id_socio ?? null;
 
-  // ✅ Evita duplicados como "PÉREZ, PÉREZ, JUAN"
   const compactarApellidoNombre = (texto) => {
     const raw = UPPER(texto);
     const partes = raw.split(',').map(t => t.trim()).filter(Boolean);
     if (partes.length >= 2 && partes[0] === partes[1]) {
-      // elimina la repetición del primer token
       partes.splice(1, 1);
     }
     return partes.join(', ');
   };
 
-  // ✅ Construye nombre completo sin duplicar
   const getNombreCompleto = (s) => {
     const apNom = NORMALIZAR(s?.apellido_nombre || s?.nombre_completo);
     const nombre = NORMALIZAR(s?.nombre);
     const apellido = NORMALIZAR(s?.apellido);
 
-    // 1) Si viene ya formateado, úsalo directo
     if (apNom) return compactarApellidoNombre(apNom);
-
-    // 2) Si el campo "nombre" ya trae coma (ej. "Pérez, Juan"), úsalo
     if (nombre && nombre.includes(',')) return compactarApellidoNombre(nombre);
 
-    // 3) Caso estándar: APELLIDO, NOMBRE
     if (apellido || nombre) {
       const armado = [apellido, nombre].filter(Boolean).join(', ');
       return UPPER(armado);
@@ -55,23 +60,22 @@ export async function generarComprobanteAlumnoPDF(alumno, opts = {}) {
 
   const fechaImpresion = new Date().toLocaleDateString('es-AR');
 
-  // 1) Enriquecer desde backend (trae nombre_año y nombre_division)
-  let alumnoFull = { ...alumno };
-  const idAlu = getIdAlumno(alumnoFull);
-  if (idAlu) {
+  // Enriquecer desde backend para completar DNI, domicilio, localidad y categoría.
+  let socioFull = { ...alumno };
+  const idSocio = getIdAlumno(socioFull);
+  if (idSocio) {
     try {
-      const r = await fetch(`${BASE_URL}/api.php?action=obtener_socio_comprobante&id=${idAlu}`);
+      const r = await fetch(`${BASE_URL}/api.php?action=obtener_socio_comprobante&id=${encodeURIComponent(String(idSocio))}`);
       const j = await r.json();
       if (j?.exito && j?.socio) {
-        // backend primero; props/opts pueden sobreescribir
-        alumnoFull = { ...j.socio, ...alumnoFull };
+        // Backend primero; props/opts pueden sobreescribir.
+        socioFull = { ...j.socio, ...socioFull };
       }
     } catch {
       /* noop */
     }
   }
 
-  // 2) Datos derivados
   const anio = Number(opts?.anio ?? alumno?.anio ?? new Date().getFullYear());
   const periodoId = Number(opts?.periodoId ?? alumno?.id_periodo ?? 0);
   const periodoTexto = NORMALIZAR(opts?.periodoTexto) || `${nombreMes(periodoId)} ${anio}`;
@@ -79,36 +83,32 @@ export async function generarComprobanteAlumnoPDF(alumno, opts = {}) {
   const precioUnitario = Number(
     opts?.precioUnitario ??
     alumno?.precio_unitario ??
-    alumnoFull?.monto_mensual ??
-    alumnoFull?.precio_categoria ??
+    socioFull?.monto_mensual ??
+    socioFull?.precio_categoria ??
     0
   );
+
   const importeTotal = Number(
     opts?.importeTotal ??
     alumno?.importe_total ??
+    alumno?.precio_total ??
     (precioUnitario > 0 ? precioUnitario : 0)
   );
 
-  const nombreCompleto = getNombreCompleto(alumnoFull);
-  const dni            = getDni(alumnoFull);
-  const domicilio      = NORMALIZAR(alumnoFull?.domicilio);
-  const localidad      = NORMALIZAR(alumnoFull?.localidad);   // sólo localidad
+  const nombreCompleto = getNombreCompleto(socioFull);
+  const dni = getDni(socioFull);
+  const domicilio = NORMALIZAR(socioFull?.domicilio ?? socioFull?.direccion);
+  const localidad = NORMALIZAR(socioFull?.localidad);
+  const categoria = NORMALIZAR(
+    opts?.categoriaNombre ??
+    alumno?.categoria_nombre ??
+    alumno?.nombre_categoria ??
+    socioFull?.categoria_nombre ??
+    socioFull?.nombre_categoria ??
+    socioFull?.cm_nombre_categoria ??
+    ''
+  );
 
-  // Curso / División
-  const nombreAnio =
-    NORMALIZAR(alumnoFull?.nombre_año) ||
-    NORMALIZAR(alumnoFull?.anio_nombre) ||
-    NORMALIZAR(alumnoFull?.nombre_anio) ||
-    '';
-
-  const nombreDivision =
-    NORMALIZAR(alumnoFull?.nombre_division) ||
-    NORMALIZAR(alumnoFull?.division) ||
-    '';
-
-  const curso = [nombreAnio, nombreDivision].filter(Boolean).join(' ');
-
-  // 3) Plantilla
   const css = `
     @page { size: A4; margin: 18mm 16mm 16mm 16mm; }
     html, body { margin: 0; padding: 0; }
@@ -118,7 +118,7 @@ export async function generarComprobanteAlumnoPDF(alumno, opts = {}) {
     .comprobante { width: 175mm; border: 1px solid #111; border-radius: 6px; padding: 10mm; }
     .hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom: 6mm; }
     .hdr .tit { font-weight: 800; font-size: 14pt; letter-spacing: .2px; }
-    .hdr .sub { font-weight: 600; font-size: 12pt; }
+    .hdr .sub { font-weight: 600; font-size: 10pt; color:#444; margin-top: 1mm; }
     .sep { border-bottom: 1px solid #000; margin: 4mm 0 6mm 0; }
     .row { display:flex; gap: 8mm; margin: 2.5mm 0; }
     .col { flex: 1; }
@@ -130,66 +130,66 @@ export async function generarComprobanteAlumnoPDF(alumno, opts = {}) {
   `;
 
   const importeFmt = Number(importeTotal || 0).toLocaleString('es-AR', {
-    minimumFractionDigits: 2, maximumFractionDigits: 2
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   });
 
   const htmlContent = `
     <div class="sheet">
-      <div class="comprobante" id="cmp-alumno">
+      <div class="comprobante" id="cmp-socio">
         <div class="hdr">
           <div>
-            <div class="tit">ASOCIACIÓN COOPERADORA</div>
-            <div class="sub">I.P.E.T. N° 50</div>
+            <div class="tit">${escapeHtml(NOMBRE_CLUB)}</div>
+            <div class="sub">Comprobante de cuota social</div>
           </div>
         </div>
         <div class="sep"></div>
 
         <div class="row">
           <div class="col">
-            <span class="lbl">Alumno</span>
-            <span class="val mono">${nombreCompleto || '—'}</span>
+            <span class="lbl">Socio</span>
+            <span class="val mono">${escapeHtml(nombreCompleto || '—')}</span>
           </div>
           <div class="col">
             <span class="lbl">DNI</span>
-            <span class="val mono">${UPPER(dni) || '—'}</span>
+            <span class="val mono">${escapeHtml(UPPER(dni) || '—')}</span>
           </div>
         </div>
 
         <div class="row">
           <div class="col">
             <span class="lbl">Domicilio</span>
-            <span class="val mono">${UPPER(domicilio) || '—'}</span>
+            <span class="val mono">${escapeHtml(UPPER(domicilio) || '—')}</span>
           </div>
           <div class="col">
             <span class="lbl">Localidad</span>
-            <span class="val mono">${UPPER(localidad) || '—'}</span>
+            <span class="val mono">${escapeHtml(UPPER(localidad) || '—')}</span>
           </div>
         </div>
 
         <div class="row">
           <div class="col">
-            <span class="lbl">Curso / División</span>
-            <span class="val mono">${UPPER(curso) || '—'}</span>
+            <span class="lbl">Categoría</span>
+            <span class="val mono">${escapeHtml(UPPER(categoria) || '—')}</span>
           </div>
           <div class="col">
             <span class="lbl">Periodo</span>
-            <span class="val mono">${UPPER(periodoTexto) || '—'}</span>
+            <span class="val mono">${escapeHtml(UPPER(periodoTexto) || '—')}</span>
           </div>
         </div>
 
         <div class="row">
           <div class="col right">
             <span class="lbl">Importe</span>
-            <span class="val mono">$ ${importeFmt}</span>
+            <span class="val mono">$ ${escapeHtml(importeFmt)}</span>
           </div>
         </div>
 
-        <div class="fecha-impresion">Exportado: ${fechaImpresion}</div>
+        <div class="fecha-impresion">Exportado: ${escapeHtml(fechaImpresion)}</div>
       </div>
     </div>
   `;
 
-  // 4) Render y descarga
   const wrapper = document.createElement('div');
   wrapper.style.position = 'fixed';
   wrapper.style.left = '-99999px';
@@ -214,7 +214,7 @@ export async function generarComprobanteAlumnoPDF(alumno, opts = {}) {
     const h2c = window.html2canvas;
     const { jsPDF } = window.jspdf;
 
-    const nodo = wrapper.querySelector('#cmp-alumno');
+    const nodo = wrapper.querySelector('#cmp-socio');
     const canvas = await h2c(nodo, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
     const imgData = canvas.toDataURL('image/png');
 
@@ -227,7 +227,7 @@ export async function generarComprobanteAlumnoPDF(alumno, opts = {}) {
     const y = 18;
 
     pdf.addImage(imgData, 'PNG', x, y, imgW, imgH, undefined, 'FAST');
-    const nombreArchivo = `Comprobante - ${nombreCompleto || 'Alumno'}.pdf`;
+    const nombreArchivo = `Comprobante - ${nombreCompleto || 'Socio'}.pdf`;
     pdf.save(nombreArchivo);
   } finally {
     document.body.removeChild(wrapper);

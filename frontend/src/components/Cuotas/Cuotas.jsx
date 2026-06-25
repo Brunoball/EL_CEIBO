@@ -29,9 +29,7 @@ import ModalPagos from './modales/ModalPagos';
 import ModalCodigoBarras from './modales/ModalCodigoBarras';
 import ModalEliminarPago from './modales/ModalEliminarPago';
 import ModalEliminarCondonacion from './modales/ModalEliminarCondonacion';
-import ModalMesCuotas from './modales/ModalMesCuotas';
 import { imprimirRecibos } from '../../utils/imprimirRecibos';
-import { imprimirRecibosExternos } from '../../utils/imprimirRecibosExternos';
 import Toast from '../Global/Toast';
 import './Cuotas.css';
 import "../Global/roots.css";
@@ -45,20 +43,13 @@ const ID_MES_ANUAL     = 13;
 const ID_MES_1ER_MITAD = 15;
 const ID_MES_2DA_MITAD = 16;
 
-const ORDEN_MESES_CLUB = {
-  enero: 1,
-  febrero: 2,
-  marzo: 3,
-  abril: 4,
-  mayo: 5,
-  junio: 6,
-  julio: 7,
-  agosto: 8,
-  septiembre: 9,
-  setiembre: 9,
-  octubre: 10,
-  noviembre: 11,
-  diciembre: 12,
+const COBRADOR_MES_DESDE = 3;
+const COBRADOR_MES_HASTA = 12;
+
+const normalizarEstadoPago = (estado = '') => {
+  const e = String(estado || '').toLowerCase().trim();
+  if (e === 'pagado' || e === 'condonado') return e;
+  return 'deudor';
 };
 
 const esPeriodoVisibleCuotas = (mes) => {
@@ -136,8 +127,6 @@ const Cuotas = () => {
 
   const [socioParaPagar, setSocioParaPagar] = useState(null);
 
-  const [mostrarModalMesCuotas, setMostrarModalMesCuotas] = useState(false);
-  const [socioParaImprimir, setSocioParaImprimir] = useState(null);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [selectedRow, setSelectedRow] = useState(null);
@@ -186,49 +175,8 @@ const Cuotas = () => {
   const getNombreCategoria = (id) => (categorias.find(c => String(c.id) === String(id))?.nombre) || '';
   const getNombreMes = (id) => (meses.find(m => String(m.id) === String(id))?.nombre) || id;
 
-  const getCategoriaExternoId = useCallback(() => {
-    const cat = categorias.find(c => normalizar(c?.nombre) === 'externo');
-    return cat ? String(cat.id) : '';
-  }, [categorias]);
 
-  const getMesesClubOrdenados = useCallback(() => {
-    const lista = Array.isArray(meses) ? meses : [];
-
-    const encontrados = lista
-      .map((m) => {
-        const nombreNorm = normalizar(m?.nombre || '');
-        const orden = ORDEN_MESES_CLUB[nombreNorm];
-        if (!orden) return null;
-        return {
-          id: Number(m.id),
-          nombre: m.nombre,
-          orden,
-        };
-      })
-      .filter(Boolean)
-      .sort((a, b) => a.orden - b.orden);
-
-    if (encontrados.length > 0) {
-      return encontrados;
-    }
-
-    return [
-      { id: 1, nombre: 'Enero', orden: 1 },
-      { id: 2, nombre: 'Febrero', orden: 2 },
-      { id: 3, nombre: 'Marzo', orden: 3 },
-      { id: 4, nombre: 'Abril', orden: 4 },
-      { id: 5, nombre: 'Mayo', orden: 5 },
-      { id: 6, nombre: 'Junio', orden: 6 },
-      { id: 7, nombre: 'Julio', orden: 7 },
-      { id: 8, nombre: 'Agosto', orden: 8 },
-      { id: 9, nombre: 'Septiembre', orden: 9 },
-      { id: 10, nombre: 'Octubre', orden: 10 },
-      { id: 11, nombre: 'Noviembre', orden: 11 },
-      { id: 12, nombre: 'Diciembre', orden: 12 },
-    ];
-  }, [meses]);
-
-  const canPrint = (estadoPagoSeleccionado === 'pagado') || (soloCobrador === true);
+  const canPrint = estadoPagoSeleccionado === 'pagado' || soloCobrador;
 
   const getAlumnoUniqueKey = useCallback((c) => {
     const idAlumno = getIdAlumnoFromCuota(c);
@@ -241,30 +189,59 @@ const Cuotas = () => {
     return `fallback:${nombre}|${dni}|${division}`;
   }, []);
 
-  const deduplicarPorAlumno = useCallback((lista) => {
+  const esMesCobrador = useCallback((c) => {
+    const idMes = Number(getIdMesFromCuota(c));
+    return idMes >= COBRADOR_MES_DESDE && idMes <= COBRADOR_MES_HASTA;
+  }, []);
+
+  const resolverEstadoCobrador = useCallback((items) => {
+    const estados = (items || []).map((item) => normalizarEstadoPago(item?.estado_pago));
+
+    // Estado global por socio en modo cobrador:
+    // si debe aunque sea un mes de marzo a diciembre, aparece solo como deudor.
+    // Así no queda duplicado como pagado y deudor a la vez.
+    if (estados.includes('deudor')) return 'deudor';
+    if (estados.includes('condonado')) return 'condonado';
+    if (estados.includes('pagado')) return 'pagado';
+    return 'deudor';
+  }, []);
+
+  const agruparCobradorPorAlumno = useCallback((lista) => {
     if (!Array.isArray(lista) || lista.length === 0) return [];
 
-    const map = new Map();
+    const grupos = new Map();
 
     for (const item of lista) {
+      if (Number(item?.es_cobrador ?? 0) !== 1) continue;
+      if (!esMesCobrador(item)) continue;
+
       const key = getAlumnoUniqueKey(item);
-      const actual = map.get(key);
-
-      if (!actual) {
-        map.set(key, item);
-        continue;
-      }
-
-      const mesActual = Number(getIdMesFromCuota(actual)) || 999;
-      const mesNuevo = Number(getIdMesFromCuota(item)) || 999;
-
-      if (mesNuevo < mesActual) {
-        map.set(key, item);
-      }
+      if (!grupos.has(key)) grupos.set(key, []);
+      grupos.get(key).push(item);
     }
 
-    return Array.from(map.values());
-  }, [getAlumnoUniqueKey]);
+    return Array.from(grupos.values()).map((items) => {
+      const ordenados = [...items].sort((a, b) => (Number(getIdMesFromCuota(a)) || 999) - (Number(getIdMesFromCuota(b)) || 999));
+      const estadoCobrador = resolverEstadoCobrador(ordenados);
+      const base = ordenados.find((item) => normalizarEstadoPago(item?.estado_pago) === estadoCobrador) || ordenados[0];
+      const resumen = ordenados.reduce((acc, item) => {
+        const estado = normalizarEstadoPago(item?.estado_pago);
+        acc[estado] = (acc[estado] || 0) + 1;
+        return acc;
+      }, { deudor: 0, pagado: 0, condonado: 0 });
+
+      return {
+        ...base,
+        estado_pago: estadoCobrador,
+        estado_cobrador: estadoCobrador,
+        meses_cobrador: ordenados.map((item) => ({
+          id_mes: Number(getIdMesFromCuota(item)),
+          estado_pago: normalizarEstadoPago(item?.estado_pago),
+        })),
+        resumen_cobrador: resumen,
+      };
+    });
+  }, [esMesCobrador, getAlumnoUniqueKey, resolverEstadoCobrador]);
 
   const fetchAniosPago = useCallback(async () => {
     try {
@@ -411,18 +388,21 @@ const Cuotas = () => {
   };
 
   const cuotasFiltradas = useMemo(() => {
-    if (!mesSeleccionado && !soloCobrador) return [];
+    if (!mesSeleccionado) return [];
 
     let lista = cuotas
-      .filter(coincideEstadoPago)
       .filter(coincideBusquedaLibre)
       .filter(coincideCategoria)
       .filter(coincideDivision)
-      .filter(coincideAnioLectivo)
-      .filter(c => (soloCobrador ? true : coincideMes(c)));
+      .filter(coincideAnioLectivo);
 
     if (soloCobrador) {
-      lista = deduplicarPorAlumno(lista);
+      lista = agruparCobradorPorAlumno(lista.filter(coincideMes))
+        .filter(coincideEstadoPago);
+    } else {
+      lista = lista
+        .filter(coincideEstadoPago)
+        .filter(coincideMes);
     }
 
     return lista.sort((a, b) => ordenarPor(a, b, orden.campo, orden.ascendente));
@@ -436,24 +416,28 @@ const Cuotas = () => {
     estadoPagoSeleccionado,
     orden,
     soloCobrador,
-    deduplicarPorAlumno
+    agruparCobradorPorAlumno
   ]);
 
   const contarConFiltros = useCallback((estadoPago) => {
     let lista = cuotas.filter((c) =>
-      (soloCobrador ? true : String(getIdMesFromCuota(c)) === String(mesSeleccionado || '')) &&
       (!busqueda || coincideBusquedaLibre(c)) &&
       coincideCategoria(c) &&
       coincideDivision(c) &&
-      coincideAnioLectivo(c) &&
-      (String(c?.estado_pago ?? '').toLowerCase().trim() === String(estadoPago).toLowerCase().trim())
+      coincideAnioLectivo(c)
     );
 
+    if (!mesSeleccionado) return 0;
+
     if (soloCobrador) {
-      lista = deduplicarPorAlumno(lista);
+      lista = agruparCobradorPorAlumno(lista.filter(coincideMes));
+      return lista.filter((c) => normalizarEstadoPago(c?.estado_pago) === normalizarEstadoPago(estadoPago)).length;
     }
 
-    return lista.length;
+    return lista.filter((c) =>
+      String(getIdMesFromCuota(c)) === String(mesSeleccionado || '') &&
+      normalizarEstadoPago(c?.estado_pago) === normalizarEstadoPago(estadoPago)
+    ).length;
   }, [
     cuotas,
     soloCobrador,
@@ -462,24 +446,23 @@ const Cuotas = () => {
     categoriaSeleccionada,
     divisionSeleccionada,
     anioLectivoSeleccionado,
-    deduplicarPorAlumno
+    agruparCobradorPorAlumno
   ]);
 
-  const cantidadFiltradaDeudores   = useMemo(() => (mesSeleccionado || soloCobrador) ? contarConFiltros('deudor')    : 0, [mesSeleccionado, soloCobrador, contarConFiltros]);
-  const cantidadFiltradaPagados    = useMemo(() => (mesSeleccionado || soloCobrador) ? contarConFiltros('pagado')    : 0, [mesSeleccionado, soloCobrador, contarConFiltros]);
-  const cantidadFiltradaCondonados = useMemo(() => (mesSeleccionado || soloCobrador) ? contarConFiltros('condonado') : 0, [mesSeleccionado, soloCobrador, contarConFiltros]);
+  const cantidadFiltradaDeudores   = useMemo(() => mesSeleccionado ? contarConFiltros('deudor')    : 0, [mesSeleccionado, soloCobrador, contarConFiltros]);
+  const cantidadFiltradaPagados    = useMemo(() => mesSeleccionado ? contarConFiltros('pagado')    : 0, [mesSeleccionado, soloCobrador, contarConFiltros]);
+  const cantidadFiltradaCondonados = useMemo(() => mesSeleccionado ? contarConFiltros('condonado') : 0, [mesSeleccionado, soloCobrador, contarConFiltros]);
 
   const imprimirTodosDisabled =
     !canPrint ||
     loadingPrint ||
-    (!mesSeleccionado && !soloCobrador) ||
+    !mesSeleccionado ||
     cuotasFiltradas.length === 0 ||
-    loading ||
-    !categoriaSeleccionada;
+    loading;
 
-  const imprimirTodosTitle = !canPrint
-    ? (soloCobrador ? 'Activá "Solo cobrador" para imprimir' : 'Disponible solo en Pagados')
-    : (categoriaSeleccionada ? 'Imprimir' : 'Seleccioná categoría: Interno o Externo');
+  const imprimirTodosTitle = soloCobrador
+    ? 'Imprimir cobrador del mes seleccionado desde cualquier pestaña'
+    : (canPrint ? 'Imprimir todos los comprobantes pagados filtrados' : 'Disponible solo en Pagados');
 
   const toggleOrden = useCallback((campo) => {
     setOrden(prev => ({ campo, ascendente: prev.campo === campo ? !prev.ascendente : true }));
@@ -634,27 +617,23 @@ const Cuotas = () => {
     getPeriodoImpresion,
   ]);
 
-  const buildAlumnoCuponesCobrador = useCallback(async (cuota) => {
-    const mesesClub = getMesesClubOrdenados();
-    const cupones = [];
-
-    for (const mes of mesesClub) {
-      const alumnoMes = await buildAlumnoParaImprimir(cuota, mes.id);
-      cupones.push(alumnoMes);
-    }
-
-    return cupones;
-  }, [buildAlumnoParaImprimir, getMesesClubOrdenados]);
+  const buildAlumnoCobradorMesSeleccionado = useCallback(async (cuota) => {
+    const idMes = Number(mesSeleccionado || getIdMesFromCuota(cuota) || 0);
+    return buildAlumnoParaImprimir(cuota, idMes || null);
+  }, [buildAlumnoParaImprimir, mesSeleccionado]);
 
   const imprimirUnoDirecto = useCallback(async (cuota) => {
     try {
       if (!cuota) return;
-      if (!mesSeleccionado && !soloCobrador) return;
+      if (!canPrint) {
+        setToastTipo('advertencia');
+        setToastMensaje('La impresión está disponible únicamente en la pestaña de Pagados.');
+        setToastVisible(true);
+        return;
+      }
+      if (!mesSeleccionado) return;
 
       setLoadingPrint(true);
-
-      const nombreCat = getNombreCategoria(cuota?.id_categoria);
-      const isExterno = normalizar(nombreCat) === 'externo';
 
       const w = window.open('', '_blank');
       if (!w) {
@@ -663,24 +642,13 @@ const Cuotas = () => {
       }
 
       if (soloCobrador) {
-        const alumnoCupones = await buildAlumnoCuponesCobrador(cuota);
-        const mesesClub = getMesesClubOrdenados();
-        const primerMes = mesesClub[0]?.id || 1;
-
-        if (isExterno) {
-          await imprimirRecibosExternos(alumnoCupones, primerMes, w, { anioPago: anioPagoSeleccionado, modoCobrador: true });
-        } else {
-          await imprimirRecibos(alumnoCupones, primerMes, w, { anioPago: anioPagoSeleccionado, modoCobrador: true });
-        }
+        const alumno = await buildAlumnoCobradorMesSeleccionado(cuota);
+        const idMesImprimir = Number(mesSeleccionado || getIdMesFromCuota(cuota));
+        await imprimirRecibos([alumno], idMesImprimir, w, { anioPago: anioPagoSeleccionado, modoCobrador: true });
       } else {
         const alumno = await buildAlumnoParaImprimir(cuota);
         const { idMesImprimir } = getPeriodoImpresion(cuota);
-
-        if (isExterno) {
-          await imprimirRecibosExternos([alumno], idMesImprimir, w, { anioPago: anioPagoSeleccionado });
-        } else {
-          await imprimirRecibos([alumno], idMesImprimir, w, { anioPago: anioPagoSeleccionado });
-        }
+        await imprimirRecibos([alumno], idMesImprimir, w, { anioPago: anioPagoSeleccionado });
       }
     } catch (e) {
       console.error('imprimirUnoDirecto error:', e);
@@ -691,93 +659,55 @@ const Cuotas = () => {
       setLoadingPrint(false);
     }
   }, [
+    canPrint,
     mesSeleccionado,
     soloCobrador,
     anioPagoSeleccionado,
     buildAlumnoParaImprimir,
-    buildAlumnoCuponesCobrador,
-    getNombreCategoria,
+    buildAlumnoCobradorMesSeleccionado,
     getPeriodoImpresion,
-    getMesesClubOrdenados,
   ]);
 
   const handleImprimirTodos = async () => {
     if (!canPrint) {
       setToastTipo('advertencia');
-      setToastMensaje(soloCobrador
-        ? 'Activá "Solo cobrador" para imprimir desde cualquier pestaña.'
-        : 'La impresión está disponible únicamente en la pestaña de Pagados.');
+      setToastMensaje('La impresión está disponible únicamente en la pestaña de Pagados.');
       setToastVisible(true);
       return;
     }
 
-    if (!categoriaSeleccionada) {
-      setToastTipo('advertencia');
-      setToastMensaje('Seleccioná una categoría (Interno o Externo) para habilitar la impresión.');
-      setToastVisible(true);
-      return;
-    }
-
-    if ((!mesSeleccionado && !soloCobrador) || cuotasFiltradas.length === 0) return;
+    if (!mesSeleccionado || cuotasFiltradas.length === 0) return;
 
     setLoadingPrint(true);
     try {
-      const getCatNombreDeCuota = (c) => (categorias.find(x => String(x.id) === String(c?.id_categoria))?.nombre) || '';
-      const internosRaw = [];
-      const externosRaw = [];
-
-      for (const c of cuotasFiltradas) {
-        const tipo = normalizar(getCatNombreDeCuota(c));
-        if (tipo === 'externo') externosRaw.push(c);
-        else internosRaw.push(c);
-      }
-
       const CONCURRENCY = 8;
+      let lista = [];
+      let periodoParaImprimir = mesSeleccionado;
+      let opciones = { anioPago: anioPagoSeleccionado };
 
       if (soloCobrador) {
-        const internosNested = await asyncPool(CONCURRENCY, internosRaw, buildAlumnoCuponesCobrador);
-        const externosNested = await asyncPool(CONCURRENCY, externosRaw, buildAlumnoCuponesCobrador);
+        lista = await asyncPool(CONCURRENCY, cuotasFiltradas, buildAlumnoCobradorMesSeleccionado);
+        periodoParaImprimir = Number(mesSeleccionado);
+        opciones = { ...opciones, modoCobrador: true };
+      } else {
+        lista = await asyncPool(CONCURRENCY, cuotasFiltradas, buildAlumnoParaImprimir);
+      }
 
-        const internos = internosNested.flat();
-        const externos = externosNested.flat();
+      if (!lista.length) return;
 
-        const mesesClub = getMesesClubOrdenados();
-        const primerMes = mesesClub[0]?.id || 1;
-
-        if (internos.length) {
-          const w1 = window.open('', '_blank');
-          if (!w1) { alert('Deshabilite el bloqueador de popups para imprimir'); return; }
-          await imprimirRecibos(internos, primerMes, w1, { anioPago: anioPagoSeleccionado, modoCobrador: true });
-        }
-
-        if (externos.length) {
-          const w2 = window.open('', '_blank');
-          if (!w2) { alert('Deshabilite el bloqueador de popups para imprimir'); return; }
-          await imprimirRecibosExternos(externos, primerMes, w2, { anioPago: anioPagoSeleccionado, modoCobrador: true });
-        }
-
-        setToastTipo('exito');
-        setToastMensaje('Impresión de cobrador generada: 1 cupón por mes (enero a diciembre) por socio.');
-        setToastVisible(true);
+      const w = window.open('', '_blank');
+      if (!w) {
+        alert('Deshabilite el bloqueador de popups para imprimir');
         return;
       }
 
-      const internos = await asyncPool(CONCURRENCY, internosRaw, buildAlumnoParaImprimir);
-      const externos = await asyncPool(CONCURRENCY, externosRaw, buildAlumnoParaImprimir);
-
-      if (internos.length) {
-        const w1 = window.open('', '_blank');
-        if (!w1) { alert('Deshabilite el bloqueador de popups para imprimir'); return; }
-        await imprimirRecibos(internos, mesSeleccionado, w1, { anioPago: anioPagoSeleccionado });
-      }
-      if (externos.length) {
-        const w2 = window.open('', '_blank');
-        if (!w2) { alert('Deshabilite el bloqueador de popups para imprimir'); return; }
-        await imprimirRecibosExternos(externos, mesSeleccionado, w2, { anioPago: anioPagoSeleccionado });
-      }
+      await imprimirRecibos(lista, periodoParaImprimir, w, opciones);
 
       setToastTipo('exito');
-      setToastMensaje('Impresión generada con montos reales por socio (incluye descuentos).');
+      setToastMensaje(soloCobrador
+        ? `Impresión de cobrador generada para ${lista.length} socio${lista.length === 1 ? '' : 's'} del mes seleccionado (${lista.length * 2} ticket${lista.length * 2 === 1 ? '' : 's'}: club y socio).`
+        : `Impresión generada en un solo archivo con ${lista.length} comprobante${lista.length === 1 ? '' : 's'} pagado${lista.length === 1 ? '' : 's'}.`
+      );
       setToastVisible(true);
     } catch (e) {
       console.error('Error al imprimir:', e);
@@ -804,24 +734,16 @@ const Cuotas = () => {
   const handlePrintClick = useCallback(async (item) => {
     if (!canPrint) {
       setToastTipo('advertencia');
-      setToastMensaje(soloCobrador
-        ? 'Activá "Solo cobrador" para imprimir desde cualquier pestaña.'
-        : 'La impresión está disponible únicamente en la pestaña de Pagados.');
+      setToastMensaje('La impresión está disponible únicamente en la pestaña de Pagados.');
       setToastVisible(true);
       return;
     }
 
-    if (estadoPagoSeleccionado === 'pagado' || soloCobrador) {
-      await imprimirUnoDirecto(item);
-      return;
-    }
-
-    setSocioParaImprimir(item);
-    setMostrarModalMesCuotas(true);
-  }, [canPrint, soloCobrador, estadoPagoSeleccionado, imprimirUnoDirecto]);
+    await imprimirUnoDirecto(item);
+  }, [canPrint, imprimirUnoDirecto]);
 
   const handleExportExcel = useCallback(() => {
-    if (!mesSeleccionado && !soloCobrador) {
+    if (!mesSeleccionado) {
       setToastTipo('advertencia');
       setToastMensaje('Seleccione mes');
       setToastVisible(true);
@@ -854,7 +776,7 @@ const Cuotas = () => {
       };
 
       const periodoTexto = soloCobrador
-        ? 'Cobrador - Marzo a Diciembre'
+        ? `Cobrador - ${getNombreMes(mesSeleccionado)}`
         : getNombreMes(mesSeleccionado);
 
       const estadoTexto = String(estadoPagoSeleccionado || '')
@@ -938,19 +860,12 @@ const Cuotas = () => {
   const onToggleSoloCobrador = () => {
     setSoloCobrador(prev => {
       const next = !prev;
-
-      if (next) {
-        setEstadoPagoSeleccionado('deudor');
-
-        const externoId = getCategoriaExternoId();
-        if (externoId) {
-          setCategoriaSeleccionada(externoId);
-        }
+      const mesActual = Number(mesSeleccionado || 0);
+      if (next && mesActual && (mesActual < COBRADOR_MES_DESDE || mesActual > COBRADOR_MES_HASTA)) {
+        setMesSeleccionado('');
       }
-
       return next;
     });
-
     triggerCascade();
   };
 
@@ -1196,6 +1111,7 @@ const Cuotas = () => {
           socio={socioParaPagar}
           periodo={Number(mesSeleccionado)}
           periodoTexto={getNombreMes(mesSeleccionado)}
+          anioPago={anioPagoSeleccionado}
           onClose={() => setMostrarModalEliminarCond(false)}
           onEliminado={async () => {
             const idAlumno = socioParaPagar?.id_alumno ?? socioParaPagar?.id_socio ?? socioParaPagar?.id;
@@ -1204,16 +1120,6 @@ const Cuotas = () => {
 
             await resyncAll();
           }}
-        />
-      )}
-
-      {canPrint && mostrarModalMesCuotas && socioParaImprimir && !soloCobrador && (
-        <ModalMesCuotas
-          socio={socioParaImprimir}
-          meses={meses}
-          anio={Number(anioPagoSeleccionado) || new Date().getFullYear()}
-          esExterno={normalizar(getNombreCategoria(socioParaImprimir?.id_categoria)) === 'externo'}
-          onClose={() => { setMostrarModalMesCuotas(false); setSocioParaImprimir(null); }}
         />
       )}
 
@@ -1233,15 +1139,6 @@ const Cuotas = () => {
                   <FontAwesomeIcon icon={faFilter} className="gcuotas-filter-icon" />
                   <span>Filtros</span>
                 </div>
-
-                <button
-                  className={`gcuotas-button gcuotas-button-print-all gcuotas-filter-print-compact ${loadingPrint ? 'gcuotas-button-loading' : ''}`}
-                  onClick={handleImprimirTodos}
-                  disabled={imprimirTodosDisabled}
-                  title={imprimirTodosTitle}
-                >
-                  <FontAwesomeIcon icon={faPrint} /><span>{loadingPrint ? 'Generando...' : 'Imprimir'}</span>
-                </button>
               </div>
 
               <div className="gcuotas-select-container">
@@ -1277,9 +1174,15 @@ const Cuotas = () => {
                         disabled={loading}
                       >
                         <option value="">Mes</option>
-                        {meses.map((mes, idx) => (
-                          <option key={idx} value={mes.id}>{mes.nombre}</option>
-                        ))}
+                        {meses
+                          .filter((mes) => {
+                            if (!soloCobrador) return true;
+                            const id = Number(mes?.id ?? mes?.id_mes ?? 0);
+                            return id >= COBRADOR_MES_DESDE && id <= COBRADOR_MES_HASTA;
+                          })
+                          .map((mes, idx) => (
+                            <option key={idx} value={mes.id}>{mes.nombre}</option>
+                          ))}
                       </select>
                       <label htmlFor="meses" className="fl-label">Mes</label>
                     </div>
@@ -1385,14 +1288,16 @@ const Cuotas = () => {
                 <FontAwesomeIcon icon={faFileExcel} /><span>Excel</span>
               </button>
 
-              <button
-                className={`gcuotas-button gcuotas-button-print-all gcuotas-actions-print-desktop ${loadingPrint ? 'gcuotas-button-loading' : ''}`}
-                onClick={handleImprimirTodos}
-                disabled={imprimirTodosDisabled}
-                title={imprimirTodosTitle}
-              >
-                <FontAwesomeIcon icon={faPrint} /><span>{loadingPrint ? 'Generando...' : 'Imprimir'}</span>
-              </button>
+              {canPrint && (
+                <button
+                  className={`gcuotas-button gcuotas-button-print-all gcuotas-actions-print-desktop ${loadingPrint ? 'gcuotas-button-loading' : ''}`}
+                  onClick={handleImprimirTodos}
+                  disabled={imprimirTodosDisabled}
+                  title={imprimirTodosTitle}
+                >
+                  <FontAwesomeIcon icon={faPrint} /><span>{loadingPrint ? 'Generando...' : 'Imprimir'}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -1408,7 +1313,7 @@ const Cuotas = () => {
                 ? 'Cuotas Condonadas'
                 : 'Cuotas Pendientes'}
             {soloCobrador
-              ? (<span className="gcuotas-periodo-seleccionado"> - Cobrador (Marzo a Diciembre)</span>)
+              ? (<span className="gcuotas-periodo-seleccionado"> - Cobrador ({getNombreMes(mesSeleccionado)})</span>)
               : mesSeleccionado
                 ? (<span className="gcuotas-periodo-seleccionado"> - {getNombreMes(mesSeleccionado)}</span>)
                 : null}
@@ -1422,7 +1327,7 @@ const Cuotas = () => {
                 type="text"
                 value={busqueda}
                 onChange={onChangeBusqueda}
-                disabled={loading || (!mesSeleccionado && !soloCobrador)}
+                disabled={loading || !mesSeleccionado}
                 className="fl-control fl-search"
                 placeholder=" "
                 autoComplete="off"
@@ -1433,14 +1338,14 @@ const Cuotas = () => {
 
           <div className="gcuotas-summary-info">
             <span className="gcuotas-summary-item">
-              <FontAwesomeIcon icon={faUsers} /> Total: {(mesSeleccionado || soloCobrador) ? cuotasFiltradas.length : 0}
+              <FontAwesomeIcon icon={faUsers} /> Total: {mesSeleccionado ? cuotasFiltradas.length : 0}
             </span>
           </div>
         </div>
 
         <div className="gcuotas-table-container">
           {loading ? <LoadingIndicator /> :
-            (!mesSeleccionado && !soloCobrador) ? <NoMonthSelected /> :
+            !mesSeleccionado ? <NoMonthSelected /> :
               cuotasFiltradas.length === 0 ? <NoDataFound /> :
                 isMobile ? (
                   <div className="gcuotas-mobile-list">
@@ -1508,14 +1413,16 @@ const Cuotas = () => {
             <FontAwesomeIcon icon={faFileExcel} /><span>Excel</span>
           </button>
 
-          <button
-            className="gcuotas-mbar-btn mbar-imprimir"
-            onClick={handleImprimirTodos}
-            disabled={imprimirTodosDisabled}
-            title={imprimirTodosTitle}
-          >
-            <FontAwesomeIcon icon={faPrint} /><span>Imprimir</span>
-          </button>
+          {canPrint && (
+            <button
+              className="gcuotas-mbar-btn mbar-imprimir"
+              onClick={handleImprimirTodos}
+              disabled={imprimirTodosDisabled}
+              title={imprimirTodosTitle}
+            >
+              <FontAwesomeIcon icon={faPrint} /><span>Imprimir</span>
+            </button>
+          )}
         </div>
       )}
     </div>

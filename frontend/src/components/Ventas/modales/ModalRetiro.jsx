@@ -17,7 +17,7 @@ export default function ModalRetiro({ abierto, orden, saving, onClose, onSubmit 
   if (!abierto || !orden) return null;
 
   const nombre = orden.persona_nombre || "Sin nombre informado";
-  const venta = orden.campania_nombre || "Venta escolar";
+  const venta = orden.campania_nombre || "Venta del club";
   const codigo = orden.codigo_orden || "Sin código";
 
   return (

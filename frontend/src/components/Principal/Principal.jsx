@@ -600,7 +600,7 @@ const Principal = () => {
 
           <div className="pp-brand__text">
             <div className="pp-brand__title">Club Deportivo</div>
-            <div className="pp-brand__subtitle">IPET 50</div>
+            <div className="pp-brand__subtitle">EL CEIBO</div>
           </div>
         </div>
 

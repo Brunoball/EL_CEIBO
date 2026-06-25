@@ -5,7 +5,7 @@ import BASE_URL from '../../../config/config';
 import Toast from '../../Global/Toast';
 import './ModalEliminarCondonacion.css';
 
-const ModalEliminarCondonacion = ({ socio, periodo, periodoTexto, onClose, onEliminado }) => {
+const ModalEliminarCondonacion = ({ socio, periodo, periodoTexto, anioPago, onClose, onEliminado }) => {
   const [toast, setToast] = useState(null);
   const [cargando, setCargando] = useState(false);
 
@@ -18,27 +18,56 @@ const ModalEliminarCondonacion = ({ socio, periodo, periodoTexto, onClose, onEli
       // Tolerante con nombres alternativos
       const id_alumno = socio?.id_alumno ?? socio?.id_socio ?? socio?.id ?? 0;
       const id_mes = Number(periodo ?? socio?.id_mes ?? socio?.id_periodo ?? 0);
+      const anio = Number(anioPago ?? socio?.anio_aplicado ?? new Date().getFullYear());
 
-      if (!id_alumno || !id_mes) {
+      if (!id_alumno || !id_mes || !anio) {
         mostrarToast('error', 'Faltan datos para eliminar la condonación.');
         setCargando(false);
+        return;
+      }
+
+      // Primero detectamos el registro real. Esto evita borrar otra cosa
+      // y también resuelve condonaciones anuales o por mitad.
+      const resBuscar = await fetch(`${BASE_URL}/api.php?action=buscar_pago_eliminar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_alumno, id_mes, anio }),
+      });
+
+      const info = await resBuscar.json().catch(() => ({}));
+      if (!info?.exito || !info?.id_pago) {
+        mostrarToast('error', info?.mensaje || 'No se encontró la condonación para eliminar.');
+        return;
+      }
+
+      if (info.estado !== 'condonado') {
+        mostrarToast('error', 'El registro encontrado no es una condonación.');
         return;
       }
 
       const res = await fetch(`${BASE_URL}/api.php?action=eliminar_pago`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_alumno, id_mes }),
+        body: JSON.stringify({
+          id_pago: Number(info.id_pago),
+          id_alumno,
+          id_mes,
+          id_mes_real: Number(info.id_mes_real || id_mes),
+          anio,
+        }),
       });
 
-      // Ignoramos el mensaje del backend (puede decir “Pago eliminado…”)
-      await res.json().catch(() => ({}));
+      const data = await res.json().catch(() => ({}));
 
-      mostrarToast('exito', 'Condonación eliminada correctamente');
-      setTimeout(() => {
-        onEliminado?.();
-        onClose?.();
-      }, 700);
+      if (data?.exito) {
+        mostrarToast('exito', 'Condonación eliminada correctamente');
+        setTimeout(() => {
+          onEliminado?.();
+          onClose?.();
+        }, 700);
+      } else {
+        mostrarToast('error', data?.mensaje || 'No se pudo eliminar la condonación.');
+      }
     } catch (e) {
       console.error(e);
       mostrarToast('error', 'Error al conectar con el servidor.');
