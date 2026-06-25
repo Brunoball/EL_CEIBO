@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import BASE_URL from '../../config/config';
 import Toast from '../Global/Toast';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faSave, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faSave } from '@fortawesome/free-solid-svg-icons';
 import './CategoriaEditar.css';
 
 const CategoriaEditar = () => {
@@ -149,102 +149,72 @@ const CategoriaEditar = () => {
 
   return (
     <div className="cat_edi_page">
-      <div className="cat_edi_modal" role="dialog" aria-modal="true">
-        <div className="cat_edi_topbar">
-          <div className="cat_edi_headLeft">
-            <h1 className="cat_edi_title">Editar categoría</h1>
-          </div>
-
-          <button
-            type="button"
-            className="cat_edi_close"
-            onClick={() => navigate('/categorias')}
-            disabled={saving}
-            aria-label="Cerrar"
-            title="Cerrar"
-          >
-            <FontAwesomeIcon icon={faTimes} />
-          </button>
-        </div>
-
-        <div className="cat_edi_divider" />
+      <div className="cat_edi_card" role="dialog" aria-modal="true">
+        <header className="cat_edi_header">
+          <h2 className="cat_edi_title">Editar categoría</h2>
+        </header>
 
         {loading ? (
           <div className="cat_edi_loading">Cargando…</div>
         ) : (
           <form className="cat_edi_form" onSubmit={onSubmit}>
-            <div className="cat_edi_grid cat_edi_grid_single">
-              <section className="cat_edi_panel">
-                <div className="cat_edi_panelHead">
-                  <div className="cat_edi_panelTitle">Datos base</div>
-                  <div className="cat_edi_panelDesc">
-                    Acá se modifica únicamente el precio normal de la categoría. El descuento familiar se configura aparte, en Categorías.
-                  </div>
-                </div>
-
-                <div className="cat_edi_panelBody">
-                  <div className="cat_edi_form_row">
-                    <label className="cat_edi_label">Nombre (no editable)</label>
-                    <input
-                      className="cat_edi_input"
-                      value={nombre}
-                      disabled
-                      style={{ textTransform: 'uppercase' }}
-                    />
-                  </div>
-
-                  <div className="cat_edi_two_col">
-                    <div className="cat_edi_form_row">
-                      <label className="cat_edi_label">Monto mensual</label>
-                      <input
-                        ref={mensualRef}
-                        className="cat_edi_input"
-                        type="number"
-                        inputMode="numeric"
-                        value={mMensual}
-                        onChange={(e) => setMMensual(e.target.value)}
-                        placeholder="0"
-                        min="0"
-                        step="1"
-                        disabled={saving}
-                      />
-                    </div>
-
-                    <div className="cat_edi_form_row">
-                      <label className="cat_edi_label">Monto anual</label>
-                      <input
-                        className="cat_edi_input"
-                        type="number"
-                        inputMode="numeric"
-                        value={mAnual}
-                        onChange={(e) => setMAnual(e.target.value)}
-                        placeholder="0"
-                        min="0"
-                        step="1"
-                        disabled={saving}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="cat_edi_tip">
-                    El descuento por hermanos ya no depende de esta categoría. Cuando pagás un grupo familiar, cuotas suma el valor de cada hermano según su propia categoría y después aplica el porcentaje general configurado.
-                  </div>
-                </div>
-              </section>
+            <div className="cat_edi_form_row">
+              <label className="cat_edi_label">Nombre</label>
+              <input
+                className="cat_edi_input"
+                value={nombre}
+                disabled
+                style={{ textTransform: 'uppercase' }}
+              />
             </div>
 
-            <div className="cat_edi_actionsBar">
+            <div className="cat_edi_two_col">
+              <div className="cat_edi_form_row">
+                <label className="cat_edi_label">Monto mensual</label>
+                <input
+                  ref={mensualRef}
+                  className="cat_edi_input"
+                  type="number"
+                  inputMode="numeric"
+                  value={mMensual}
+                  onChange={(e) => setMMensual(e.target.value)}
+                  placeholder="0"
+                  min="0"
+                  step="1"
+                  disabled={saving}
+                />
+              </div>
+
+              <div className="cat_edi_form_row">
+                <label className="cat_edi_label">Monto anual</label>
+                <input
+                  className="cat_edi_input"
+                  type="number"
+                  inputMode="numeric"
+                  value={mAnual}
+                  onChange={(e) => setMAnual(e.target.value)}
+                  placeholder="0"
+                  min="0"
+                  step="1"
+                  disabled={saving}
+                />
+              </div>
+            </div>
+
+            <div className="cat_edi_form_actions">
               <button
                 type="button"
                 className="cat_edi_btn cat_edi_btn_back"
                 onClick={() => navigate('/categorias')}
                 disabled={saving}
               >
-                <FontAwesomeIcon icon={faArrowLeft} /> Volver
+                <FontAwesomeIcon icon={faArrowLeft} />
+                <span className="cat_edi_btn_text">Volver</span>
               </button>
 
-              <button type="submit" className="cat_edi_btn cat_edi_btn_save" disabled={saving}>
-                <FontAwesomeIcon icon={faSave} /> {saving ? 'Guardando…' : 'Guardar'}
+              <button type="submit" className="cat_edi_btn cat_edi_btn_primary" disabled={saving}>
+                <FontAwesomeIcon icon={faSave} />
+                <span className="cat_edi_btn_text">{saving ? 'Guardando…' : 'Guardar'}</span>
               </button>
             </div>
           </form>
