@@ -147,6 +147,8 @@ const Alumnos = () => {
 
   // refs para persistir scroll y alumno seleccionado entre acciones
   const listRef = useRef(null);
+  const tableBodyViewportRef = useRef(null);
+  const [hasTableScroll, setHasTableScroll] = useState(false);
   // ✅ inicializar desde sessionStorage para sobrevivir navegación editar→volver
   const _savedScroll = sessionStorage.getItem('alu_scroll');
   const _savedAlumnoId = sessionStorage.getItem('alu_selected_id');
@@ -291,6 +293,38 @@ const Alumnos = () => {
     () => cargando && (hayFiltros || filtroActivo === 'todos'),
     [cargando, hayFiltros, filtroActivo]
   );
+
+  const medirScrollTabla = useCallback(() => {
+    const viewport = tableBodyViewportRef.current;
+    if (!viewport) {
+      setHasTableScroll(false);
+      return;
+    }
+
+    const necesitaScroll = viewport.scrollHeight > viewport.clientHeight + 1;
+    setHasTableScroll(necesitaScroll);
+  }, []);
+
+  useEffect(() => {
+    if (isMobile) {
+      setHasTableScroll(false);
+      return;
+    }
+
+    medirScrollTabla();
+
+    const viewport = tableBodyViewportRef.current;
+    if (!viewport || typeof ResizeObserver === 'undefined') return;
+
+    const observer = new ResizeObserver(() => medirScrollTabla());
+    observer.observe(viewport);
+
+    if (viewport.firstElementChild) {
+      observer.observe(viewport.firstElementChild);
+    }
+
+    return () => observer.disconnect();
+  }, [isMobile, alumnosFiltrados.length, mostrarLoader, hayFiltros, filtroActivo, medirScrollTabla]);
 
   const dispararCascadaUnaVez = useCallback((duracionMs) => {
     const safeMs = 400 + (MAX_CASCADE_ITEMS - 1) * 30 + 300;
@@ -895,80 +929,78 @@ const Alumnos = () => {
         </div>
 
         <div className="alu-column alu-icons-column">
-          {isSelected && (
-            <div className="alu-icons-container">
-              <button
-                className="alu-iconchip is-info"
-                title="Ver información"
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  await cargarAlumnoConDetalle(alumno);
-                }}
-                aria-label="Ver información"
-              >
-                <FaInfoCircle />
-              </button>
+          <div className="alu-icons-container">
+            <button
+              className="alu-iconchip is-info"
+              title="Ver información"
+              onClick={async (e) => {
+                e.stopPropagation();
+                await cargarAlumnoConDetalle(alumno);
+              }}
+              aria-label="Ver información"
+            >
+              <FaInfoCircle />
+            </button>
 
-              {!isVista && (
+            {!isVista && (
+              <button
+                className={`alu-iconchip is-cobrador ${esCobrador ? 'is-success' : 'is-warning'}`}
+                title={esCobrador ? 'Quitar de COBRADOR' : 'Marcar como COBRADOR'}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  abrirModalCobrador(alumno);
+                }}
+                aria-label="Cobrador"
+              >
+                {esCobrador ? <FaTimesCircle /> : <FaMoneyBillWave />}
+              </button>
+            )}
+
+            {!isVista && (
+              <>
                 <button
-                  className={`alu-iconchip is-cobrador ${esCobrador ? 'is-success' : 'is-warning'}`}
-                  title={esCobrador ? 'Quitar de COBRADOR' : 'Marcar como COBRADOR'}
+                  className="alu-iconchip is-edit"
+                  title="Editar"
                   onClick={(e) => {
                     e.stopPropagation();
-                    abrirModalCobrador(alumno);
+                    // ✅ persistir scroll y selección antes de navegar a editar
+                    sessionStorage.setItem('alu_scroll', String(scrollOffsetRef.current));
+                    sessionStorage.setItem('alu_selected_id', String(alumno.id_alumno));
+                    navigateRow(`/alumnos/editar/${alumno.id_alumno}`);
                   }}
-                  aria-label="Cobrador"
+                  aria-label="Editar"
                 >
-                  {esCobrador ? <FaTimesCircle /> : <FaMoneyBillWave />}
+                  <FaEdit />
                 </button>
-              )}
 
-              {!isVista && (
-                <>
-                  <button
-                    className="alu-iconchip is-edit"
-                    title="Editar"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // ✅ persistir scroll y selección antes de navegar a editar
-                      sessionStorage.setItem('alu_scroll', String(scrollOffsetRef.current));
-                      sessionStorage.setItem('alu_selected_id', String(alumno.id_alumno));
-                      navigateRow(`/alumnos/editar/${alumno.id_alumno}`);
-                    }}
-                    aria-label="Editar"
-                  >
-                    <FaEdit />
-                  </button>
+                <button
+                  className="alu-iconchip is-delete"
+                  title="Eliminar"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAlumnoAEliminar(alumno);
+                    setMostrarModalEliminar(true);
+                  }}
+                  aria-label="Eliminar"
+                >
+                  <FaTrash />
+                </button>
 
-                  <button
-                    className="alu-iconchip is-delete"
-                    title="Eliminar"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setAlumnoAEliminar(alumno);
-                      setMostrarModalEliminar(true);
-                    }}
-                    aria-label="Eliminar"
-                  >
-                    <FaTrash />
-                  </button>
-
-                  <button
-                    className="alu-iconchip is-baja"
-                    title="Dar de baja"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setAlumnoDarBaja(alumno);
-                      setMostrarModalDarBaja(true);
-                    }}
-                    aria-label="Dar de baja"
-                  >
-                    <FaUserMinus />
-                  </button>
-                </>
-              )}
-            </div>
-          )}
+                <button
+                  className="alu-iconchip is-baja"
+                  title="Dar de baja"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAlumnoDarBaja(alumno);
+                    setMostrarModalDarBaja(true);
+                  }}
+                  aria-label="Dar de baja"
+                >
+                  <FaUserMinus />
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -1155,7 +1187,7 @@ const Alumnos = () => {
           {/* TABLA (desktop) */}
           {!isMobile && (
             <div className="alu-box-table">
-              <div className="alu-header">
+              <div className={`alu-header ${hasTableScroll ? 'alu-header--with-scroll' : ''}`}>
                 <div className="alu-column-header alu-header-nombre">Apellido y Nombre</div>
                 <div className="alu-column-header alu-header-dni">DNI</div>
                 <div className="alu-column-header alu-header-domicilio">Domicilio</div>
@@ -1203,6 +1235,7 @@ const Alumnos = () => {
                           itemData={listItemData}
                           overscanCount={10}
                           itemKey={(index, data) => data.rows[index]?.id_alumno ?? index}
+                          outerRef={tableBodyViewportRef}
                           onScroll={handleListScroll}
                           initialScrollOffset={scrollOffsetRef.current}
                         >

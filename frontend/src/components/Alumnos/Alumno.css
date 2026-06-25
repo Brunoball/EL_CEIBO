@@ -431,7 +431,14 @@ input:-webkit-autofill { background-color: transparent !important; }
   display: grid;
   grid-template-columns: 1.45fr 0.75fr 1.15fr 1fr 0.95fr 0.9fr;
   background: var(--reg-primary);
-  position: sticky; top: 0; z-index: 10; overflow: hidden; scrollbar-gutter: stable;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.alu-header.alu-header--with-scroll {
+  scrollbar-gutter: stable;
 }
 
 .alu-column-header {
